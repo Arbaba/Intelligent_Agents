@@ -1,11 +1,15 @@
 import java.awt.Color;
 
+import java.util.ArrayList;
+import uchicago.src.sim.engine.BasicAction;
 import uchicago.src.sim.engine.Schedule;
 import uchicago.src.sim.engine.SimModelImpl;
 import uchicago.src.sim.engine.SimInit;
 import uchicago.src.sim.gui.DisplaySurface;
 import uchicago.src.sim.gui.ColorMap;
 import uchicago.src.sim.gui.Value2DDisplay;
+import uchicago.src.sim.gui.Object2DDisplay;
+import uchicago.src.sim.util.SimUtilities;
 /**
  * Class that implements the simulation model for the rabbits grass
  * simulation.  This is the first class which needs to be setup in
@@ -30,7 +34,7 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		private int numInitGrass = NUMINITGRASS;
 		private double grassGrowthRate = GRASSGROWTHRATE;
 		private int birthThreshold = BRITHTHRESHOLD;
-
+		private ArrayList<RabbitsGrassSimulationAgent> agentList;
 		private DisplaySurface displaySurf;
 		private RabbitsGrassSimulationSpace rgSpace;
 		public static void main(String[] args) {
@@ -66,11 +70,33 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		public void buildModel(){
 			System.out.println("Building Model");
 			rgSpace = new RabbitsGrassSimulationSpace(getGridSize(), getGridSize());
+			rgSpace.spreadGrass(getNumInitGrass());
+			for(int i = 0; i < numInitRabbits; i++){
+				addNewAgent();
+			}
+			for(int i = 0; i < agentList.size(); i++){
+				RabbitsGrassSimulationAgent agent = agentList.get(i);
+				agent.report();
+			}		
 		}
 		
 		public void buildSchedule(){
 			System.out.println("Building Schedule");
-		}
+
+			class CarryDropStep extends BasicAction {
+				public void execute() {
+				  SimUtilities.shuffle(agentList);
+				  for(int i =0; i < agentList.size(); i++){
+					RabbitsGrassSimulationAgent agent = agentList.get(i);
+
+					//agent.step();
+					displaySurf.updateDisplay();
+				  }
+				}
+			  }
+		  
+			  schedule.scheduleActionBeginning(0, new CarryDropStep());
+			}		
 
 		public void buildDisplay(){
 			System.out.println("Building Display");
@@ -80,17 +106,24 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 			for(int i = 1; i<16; i++){
 			  map.mapColor(i, new Color((int)(i * 8 + 127), 0, 0));
 			}
-			map.mapColor(0, Color.white);
+			map.mapColor(0, Color.CYAN);
 		
 			Value2DDisplay displayRabbitGrass =
 				new Value2DDisplay(rgSpace.getSpace(), map);
+			Object2DDisplay displayAgents = new Object2DDisplay(rgSpace.getCurrentAgentSpace());
+			displayAgents.setObjectList(agentList);
 		
 			displaySurf.addDisplayable(displayRabbitGrass, "Money");
+			displaySurf.addDisplayable(displayAgents, "Agents");
 		}
 
 		public void setup() {
 			// TODO Auto-generated method stub
+			rgSpace = null;
+			agentList = new ArrayList<RabbitsGrassSimulationAgent>();
+			schedule = new Schedule(1);
 			if (displaySurf != null){
+
 				displaySurf.dispose();
 			  }
 			  displaySurf = null;
@@ -98,8 +131,17 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 			  displaySurf = new DisplaySurface(this, "Rabit Grass Model Window 1");
 		  
 			  registerDisplaySurface("Rabit Grass Model Window 1", displaySurf);
-		}
+			}
 
+		public int randomIndex(){
+			return  (int)(Math.random()*(rgSpace.getDim()));
+		}
+		
+		private void addNewAgent(){
+			RabbitsGrassSimulationAgent rabbitAgent = new RabbitsGrassSimulationAgent(randomIndex(), randomIndex());
+			rgSpace.addAgent(rabbitAgent);
+			agentList.add(rabbitAgent);
+		}
 		public String getName() {
 			// TODO Auto-generated method stub
 			return "Rabbit Grass Simulation";
