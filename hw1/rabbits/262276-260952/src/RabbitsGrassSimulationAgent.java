@@ -2,6 +2,8 @@ import java.awt.Color;
 
 import javax.print.attribute.standard.DialogOwner;
 
+import epfl.lia.logist.exception.BehaviorExecutionError;
+
 import java.util.List;
 import java.util.ArrayList;
 import uchicago.src.sim.gui.Drawable;
@@ -80,19 +82,19 @@ public class RabbitsGrassSimulationAgent implements Drawable {
 		
 		List<Direction> directions = new ArrayList<Direction>();
 
-		if(canMoveTo(x - 1, y)){
+		if(canMoveTo(Math.floorMod((getX() - 1), rgSpace.getDimX()) , y)){
 			directions.add(Direction.LEFT);
 		} 
 
-		if(canMoveTo(x + 1, y)){
+		if(canMoveTo(Math.floorMod((getX() + 1), rgSpace.getDimX()), y)){
 			directions.add(Direction.RIGHT);
 		}
 
-		if(canMoveTo(x, y + 1)){
+		if(canMoveTo(x, Math.floorMod((getY() - 1), rgSpace.getDimY()))){
 			directions.add(Direction.DOWN);
 		}
 
-		if(canMoveTo(x, y - 1)){
+		if(canMoveTo(x, Math.floorMod((getY() + 1), rgSpace.getDimY()))){
 			directions.add(Direction.UP);
 		}
 		return directions;
@@ -106,31 +108,61 @@ public class RabbitsGrassSimulationAgent implements Drawable {
 	}
 
 	private boolean canMoveTo(int x, int y){
+
 		return x >= 0 && x <  rgSpace.getDimX() && y >= 0 && y < rgSpace.getDimY()  && !rgSpace.isCellOccupied(x,y);
 	}
 
 	public void move(){
 		List<Direction> validDirections = validDirections();
+		/*
+		int prevX = getX();
+		int prevY = getY();*/
 		if(validDirections.size() > 0){
+		
 			int idx  = (int) (Math.random() * validDirections.size());
 			Direction dir = validDirections.get(idx);
 			switch (dir) {
 				case LEFT:
-					setXY(getX() - 1 , y);
+					rgSpace.moveAgentAt(getX(), getY(), Math.floorMod((getX() - 1), rgSpace.getDimX()) , y);
 					break;
 				case RIGHT:
-					setXY(getX() + 1, y);
+					rgSpace.moveAgentAt(getX(), getY(), Math.floorMod((getX() + 1), rgSpace.getDimX()), y);
 					break;
 				case UP:
-					setXY(x, getY() - 1);
+					rgSpace.moveAgentAt(getX(), getY(), x, Math.floorMod((getY() - 1), rgSpace.getDimY()));
 					break;
 				case DOWN:
-					setXY(x, getY() + 1);
+					rgSpace.moveAgentAt(getX(), getY(), x, Math.floorMod((getY() + 1), rgSpace.getDimY()));
 					break;
 				default:
 					break;
 			}
+			/*
+			switch (dir) {
+				case LEFT:
+					setXY(Math.floorMod((getX() - 1), rgSpace.getDimX()) , y);
+					break;
+				case RIGHT:
+					setXY(Math.floorMod((getX() + 1), rgSpace.getDimX()), y);
+					break;
+				case UP:
+					setXY(x, Math.floorMod((getY() - 1), rgSpace.getDimY()));
+					break;
+				case DOWN:
+					setXY(x, Math.floorMod((getY() + 1), rgSpace.getDimY()));
+					break;
+				default:
+					break;
+			}
+			*/
+		}else{
+			//report();
 		}
+		/*if(!(prevX != getX() || prevY != getY())){
+				throw new RuntimeException("illegal move");
+	
+		}*/
+
 	}
 
 	public void report(){

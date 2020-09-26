@@ -30,7 +30,7 @@ public class RabbitsGrassSimulationSpace {
     }
 
     public int getDimY(){
-      return this.worldX;
+      return this.worldY;
     }
 
     public void spreadGrass(int grass){
@@ -42,13 +42,13 @@ public class RabbitsGrassSimulationSpace {
           int y = (int)(Math.random()*(grassSpace.getSizeY()));
     
           // Get the value of the object at those coordinates
-          int currentValue = getMoneyAt(x, y);
+          int currentValue = getGrassAt(x, y);
           // Replace the Integer object with another one with the new value
           grassSpace.putObjectAt(x,y,new Integer(currentValue + 1));
         }
       }
     
-      public int getMoneyAt(int x, int y){
+      public int getGrassAt(int x, int y){
         int i;
         if(grassSpace.getObjectAt(x,y)!= null){
           i = ((Integer)grassSpace.getObjectAt(x,y)).intValue();
@@ -96,9 +96,32 @@ public class RabbitsGrassSimulationSpace {
       }
 
       
+      public boolean moveAgentAt(int x, int y, int newX, int newY){
+        boolean retVal = false;
+        if(!isCellOccupied(newX, newY)){
+          RabbitsGrassSimulationAgent cda = (RabbitsGrassSimulationAgent)agentSpace.getObjectAt(x, y);
+          if(cda != null){
+            removeAgentAt(x,y);
+            cda.setXY(newX, newY);
+            agentSpace.putObjectAt(newX, newY, cda);
+            retVal = true;
+          }
+        }
+        return retVal;
+      }
       public int eatGrassAt(int x, int y){
-        int grassEnergy = getMoneyAt(x, y);
+        int grassEnergy = getGrassAt(x, y);
         grassSpace.putObjectAt(x, y, new Integer(0));
         return grassEnergy;
+      }
+
+      public int getTotalGrass(){
+        int total = 0;
+        for(int i = 0; i < agentSpace.getSizeX(); i++){
+          for(int j = 0; j < agentSpace.getSizeY(); j++){
+            total += ((Integer) grassSpace.getObjectAt(i, j)).intValue();
+          }
+        }
+        return total;
       }
 }
