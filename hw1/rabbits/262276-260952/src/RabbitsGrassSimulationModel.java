@@ -24,16 +24,18 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		// Default values
 		private static final int GRIDSIZE = 20;
 		private static final int NUMINITRABBITS = 5;
-		private static final int NUMINITGRASS = 10;
-		private static final double GRASSGROWTHRATE = 5;
-		private static final int BRITHTHRESHOLD = 40;
-	
+		private static final int NUMINITGRASS = 50;
+		private static final int GRASSGROWTHRATE = 5;
+		public 	static final int BIRTHTHRESHOLD = 40;
+		private static final int NUMINITLIFE = 20;
+		private static final int REPRODUCTIONCOST = 20;
+
 		private Schedule schedule;
 		private int gridSize = GRIDSIZE;
 		private int numInitRabbits = NUMINITRABBITS;
 		private int numInitGrass = NUMINITGRASS;
-		private double grassGrowthRate = GRASSGROWTHRATE;
-		private int birthThreshold = BRITHTHRESHOLD;
+		private int grassGrowthRate = GRASSGROWTHRATE;
+		private int birthThreshold = BIRTHTHRESHOLD;
 		private ArrayList<RabbitsGrassSimulationAgent> agentList;
 		private DisplaySurface displaySurf;
 		private RabbitsGrassSimulationSpace rgSpace;
@@ -89,7 +91,13 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 				  for(int i =0; i < agentList.size(); i++){
 					RabbitsGrassSimulationAgent agent = agentList.get(i);
 
-					//agent.step();
+					agent.step();
+					rgSpace.spreadGrass(grassGrowthRate);
+					reapDeadAgents();
+					if(agent.getEnergy()>= birthThreshold){
+						addNewAgent();
+						agent.payReproduction(REPRODUCTIONCOST);
+					}
 					displaySurf.updateDisplay();
 				  }
 				}
@@ -103,17 +111,19 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 
 			ColorMap map = new ColorMap();
 
-			for(int i = 1; i<16; i++){
-			  map.mapColor(i, new Color((int)(i * 8 + 127), 0, 0));
+			for(int i = 1; i< 200; i++){
+				//DENSER GRASS WILL BE LIGHTER
+				map.mapColor(i, new Color(0, 55 + i, 0));
 			}
-			map.mapColor(0, Color.CYAN);
+			final Color BROWN = new Color(139,69,19);
+			map.mapColor(0, BROWN);
 		
-			Value2DDisplay displayRabbitGrass =
-				new Value2DDisplay(rgSpace.getSpace(), map);
+			Value2DDisplay displayGrass =
+				new Value2DDisplay(rgSpace.getGrassSpace(), map);
 			Object2DDisplay displayAgents = new Object2DDisplay(rgSpace.getCurrentAgentSpace());
 			displayAgents.setObjectList(agentList);
 		
-			displaySurf.addDisplayable(displayRabbitGrass, "Money");
+			displaySurf.addDisplayable(displayGrass, "Money");
 			displaySurf.addDisplayable(displayAgents, "Agents");
 		}
 
@@ -131,24 +141,33 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 			  displaySurf = new DisplaySurface(this, "Rabit Grass Model Window 1");
 		  
 			  registerDisplaySurface("Rabit Grass Model Window 1", displaySurf);
-			}
-
-		public int randomIndex(){
-			return  (int)(Math.random()*(rgSpace.getDim()));
 		}
-		
+
 		private void addNewAgent(){
-			RabbitsGrassSimulationAgent rabbitAgent = new RabbitsGrassSimulationAgent(randomIndex(), randomIndex());
+			RabbitsGrassSimulationAgent rabbitAgent = new RabbitsGrassSimulationAgent( (int)(Math.random()*(rgSpace.getDimX())),  (int)(Math.random()*(rgSpace.getDimY())),NUMINITLIFE);
 			rgSpace.addAgent(rabbitAgent);
 			agentList.add(rabbitAgent);
+
 		}
+
+		private int reapDeadAgents(){
+			int count = 0;
+			for(int i = (agentList.size() - 1); i >= 0 ; i--){
+			  RabbitsGrassSimulationAgent rabbit = agentList.get(i);
+			  if(rabbit.getEnergy() < 1){
+				rgSpace.removeAgentAt(rabbit.getX(), rabbit.getY());
+				//cdSpace.spreadMoney(cda.getMoney());
+				agentList.remove(i);
+				count++;
+			  }
+			}
+			return count;
+		  }
 		public String getName() {
-			// TODO Auto-generated method stub
 			return "Rabbit Grass Simulation";
 		}
 
 		public Schedule getSchedule() {
-			// TODO Auto-generated method stub
 			return schedule;
 		}
 
@@ -177,11 +196,11 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		}
 
 		
-		public double getGrassGrowthRate(){
+		public int getGrassGrowthRate(){
 			return grassGrowthRate;
 		}
 
-		public void setGrassGrowthRate(double grassGrowthRate){
+		public void setGrassGrowthRate(int grassGrowthRate){
 			this.grassGrowthRate = grassGrowthRate;
 		}
 		
