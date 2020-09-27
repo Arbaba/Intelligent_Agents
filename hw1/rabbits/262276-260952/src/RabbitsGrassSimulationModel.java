@@ -33,6 +33,7 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		public 	static final int BIRTHTHRESHOLD = 30;
 		private static final int NUMINITLIFE = 20;
 		private static final int REPRODUCTIONCOST = 10;
+		private static final int MAXGRASSGROWTH = 20;
 
 		private Schedule schedule;
 		private int gridSize = GRIDSIZE;
@@ -40,6 +41,7 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		private int numInitGrass = NUMINITGRASS;
 		private int grassGrowthRate = GRASSGROWTHRATE;
 		private int birthThreshold = BIRTHTHRESHOLD;
+		private int maxGrassGrowth = MAXGRASSGROWTH;
 		private ArrayList<RabbitsGrassSimulationAgent> agentList;
 		private DisplaySurface displaySurf;
 		private RabbitsGrassSimulationSpace rgSpace;
@@ -69,14 +71,14 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		public String[] getInitParam() {
 			// Parameters to be set by users via the Repast UI slider bar
 			// Do "not" modify the parameters names provided in the skeleton code, you can add more if you want 
-			String[] params = { "GridSize", "NumInitRabbits", "NumInitGrass", "GrassGrowthRate", "BirthThreshold"};
+			String[] params = { "GridSize", "NumInitRabbits", "NumInitGrass", "GrassGrowthRate", "BirthThreshold", "MaxGrassGrowth"};
 			return params;
 		}
 
 		public void buildModel(){
 			System.out.println("Building Model");
 			rgSpace = new RabbitsGrassSimulationSpace(getGridSize(), getGridSize());
-			rgSpace.spreadGrass(getNumInitGrass());
+			rgSpace.spreadGrass(getNumInitGrass(), maxGrassGrowth);
 			for(int i = 0; i < numInitRabbits; i++){
 				addNewAgent();
 			}
@@ -93,7 +95,7 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 				public void execute() {
 					SimUtilities.shuffle(agentList);
 
-					rgSpace.spreadGrass(grassGrowthRate);
+					rgSpace.spreadGrass(grassGrowthRate, maxGrassGrowth);
 					ArrayList<RabbitsGrassSimulationAgent> readyToReproduce = new ArrayList<RabbitsGrassSimulationAgent>();
 					for(int i =0; i < agentList.size(); i++){
 						RabbitsGrassSimulationAgent agent = agentList.get(i);
@@ -274,6 +276,14 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 
 		public void setBirthThreshold(int birthThreshold){
 			this.birthThreshold =  birthThreshold;
+		}
+
+		public int getmaxGrassGrowth(){
+			return maxGrassGrowth;
+		}
+
+		public void setmaxGrassGrowth(int maxGrassGrowth){
+			this.maxGrassGrowth =  maxGrassGrowth;
 		}
 
 

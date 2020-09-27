@@ -1,8 +1,7 @@
 import java.awt.Color;
 
 import javax.print.attribute.standard.DialogOwner;
-
-import epfl.lia.logist.exception.BehaviorExecutionError;
+//import epfl.lia.logist.exception.BehaviorExecutionError;
 
 import java.util.List;
 import java.util.ArrayList;

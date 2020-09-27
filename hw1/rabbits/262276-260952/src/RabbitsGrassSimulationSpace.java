@@ -33,7 +33,7 @@ public class RabbitsGrassSimulationSpace {
       return this.worldY;
     }
 
-    public void spreadGrass(int grass){
+    public void spreadGrass(int grass, int maxGrassGrowth){
         // Randomly place grass in grassSpace
         for(int i = 0; i < grass; i++){
     
@@ -44,7 +44,9 @@ public class RabbitsGrassSimulationSpace {
           // Get the value of the object at those coordinates
           int currentValue = getGrassAt(x, y);
           // Replace the Integer object with another one with the new value
-          grassSpace.putObjectAt(x,y,new Integer(currentValue + 1));
+          if(currentValue < maxGrassGrowth){
+            grassSpace.putObjectAt(x,y,new Integer(currentValue + 1));
+          }
         }
       }
     
