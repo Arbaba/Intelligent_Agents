@@ -35,19 +35,37 @@ public class RabbitsGrassSimulationSpace {
 
     public void spreadGrass(int grass, int maxGrassGrowth){
         // Randomly place grass in grassSpace
-        for(int i = 0; i < grass; i++){
-    
+        int countLimit = 10 * grassSpace.getSizeX() * grassSpace.getSizeY();
+        int count = 0;
+        int grassPlaced = 0;
+
+        while((count < countLimit) && (grassPlaced < grass)){
           // Choose coordinates
           int x = (int)(Math.random()*(grassSpace.getSizeX()));
           int y = (int)(Math.random()*(grassSpace.getSizeY()));
-    
+
           // Get the value of the object at those coordinates
           int currentValue = getGrassAt(x, y);
+
           // Replace the Integer object with another one with the new value
           if(currentValue < maxGrassGrowth){
             grassSpace.putObjectAt(x,y,new Integer(currentValue + 1));
+            grassPlaced++;
           }
+          count++;
         }
+        /*
+        for(int i = 0; i < grass; i++){    
+          int x = (int)(Math.random()*(grassSpace.getSizeX()));
+          int y = (int)(Math.random()*(grassSpace.getSizeY()));
+    
+          
+          int currentValue = getGrassAt(x, y);
+          
+          if(currentValue < maxGrassGrowth){
+            grassSpace.putObjectAt(x,y,new Integer(currentValue + 1));
+          }
+        }*/
       }
     
       public int getGrassAt(int x, int y){
