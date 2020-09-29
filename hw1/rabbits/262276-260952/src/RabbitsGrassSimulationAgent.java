@@ -113,9 +113,7 @@ public class RabbitsGrassSimulationAgent implements Drawable {
 
 	public void move(){
 		List<Direction> validDirections = validDirections();
-		/*
-		int prevX = getX();
-		int prevY = getY();*/
+
 		if(validDirections.size() > 0){
 		
 			int idx  = (int) (Math.random() * validDirections.size());
@@ -136,31 +134,10 @@ public class RabbitsGrassSimulationAgent implements Drawable {
 				default:
 					break;
 			}
-			/*
-			switch (dir) {
-				case LEFT:
-					setXY(Math.floorMod((getX() - 1), rgSpace.getDimX()) , y);
-					break;
-				case RIGHT:
-					setXY(Math.floorMod((getX() + 1), rgSpace.getDimX()), y);
-					break;
-				case UP:
-					setXY(x, Math.floorMod((getY() - 1), rgSpace.getDimY()));
-					break;
-				case DOWN:
-					setXY(x, Math.floorMod((getY() + 1), rgSpace.getDimY()));
-					break;
-				default:
-					break;
-			}
-			*/
+
 		}else{
-			//report();
 		}
-		/*if(!(prevX != getX() || prevY != getY())){
-				throw new RuntimeException("illegal move");
-	
-		}*/
+
 
 	}
 

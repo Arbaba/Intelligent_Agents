@@ -46,6 +46,7 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		private DisplaySurface displaySurf;
 		private RabbitsGrassSimulationSpace rgSpace;
 		private OpenSequenceGraph graphs;
+
 		public static void main(String[] args) {
 			
 			System.out.println("Rabbit skeleton");
@@ -125,15 +126,17 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 				}
 			  }
 		  
-			  schedule.scheduleActionAtInterval(1, new RabbitCountLiving());
+			  schedule.scheduleActionAtInterval(5, new RabbitCountLiving());
 		  
 			  class GrassCountInSpace extends BasicAction {
 				public void execute(){
 				  graphs.step();
 				}
 			  }
-		  
-			  schedule.scheduleActionAtInterval(1, new GrassCountInSpace());
+
+
+			  schedule.scheduleActionAtInterval(5, new GrassCountInSpace());
+
 			}		
 
 		public void buildDisplay(){
@@ -141,13 +144,14 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 
 			ColorMap map = new ColorMap();
 
-			for(int i = 1; i< 200; i++){
+			for(int i = 1; i<= maxGrassGrowth; i++){
 				//Denser Grass will be lighter
-				map.mapColor(i, new Color(0, 55 + i, 0));
+				int colorOffset = (int)((double)i / maxGrassGrowth *200);
+				map.mapColor(i, new Color(0, 55 + colorOffset, 0));
 			}
 			final Color BROWN = new Color(139,69,19);
 			map.mapColor(0, BROWN);
-		
+
 			Value2DDisplay displayGrass =
 				new Value2DDisplay(rgSpace.getGrassSpace(), map);
 			Object2DDisplay displayAgents = new Object2DDisplay(rgSpace.getCurrentAgentSpace());
@@ -180,6 +184,16 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 			  return (double) countLivingAgents();
 			}
 		}
+		class rabbitGrassRatio implements DataSource, Sequence {
+
+			public Object execute() {
+			  return new Double(getSValue());
+			}
+		
+			public double getSValue() {
+			  return (double) countLivingAgents() / rgSpace.getTotalGrass();
+			}
+		}
 		public int countLivingAgents(){
 			int count = 0;
 			for (RabbitsGrassSimulationAgent agent : agentList) {
@@ -204,7 +218,6 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 			registerDisplaySurface("Rabit Grass Model Window 1", displaySurf);
 			
 			graphs = new OpenSequenceGraph("Amount Of Grass In Space",this);
-
 			// Register Displays
 			registerDisplaySurface("Carry Drop Model Window 1", displaySurf);
 			this.registerMediaProducer("Plot", graphs);

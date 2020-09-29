@@ -54,18 +54,7 @@ public class RabbitsGrassSimulationSpace {
           }
           count++;
         }
-        /*
-        for(int i = 0; i < grass; i++){    
-          int x = (int)(Math.random()*(grassSpace.getSizeX()));
-          int y = (int)(Math.random()*(grassSpace.getSizeY()));
-    
-          
-          int currentValue = getGrassAt(x, y);
-          
-          if(currentValue < maxGrassGrowth){
-            grassSpace.putObjectAt(x,y,new Integer(currentValue + 1));
-          }
-        }*/
+
       }
     
       public int getGrassAt(int x, int y){
