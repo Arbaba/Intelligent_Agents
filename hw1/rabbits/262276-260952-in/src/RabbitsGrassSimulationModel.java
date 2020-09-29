@@ -217,7 +217,7 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		
 			registerDisplaySurface("Rabit Grass Model Window 1", displaySurf);
 			
-			graphs = new OpenSequenceGraph("Amount Of Grass In Space",this);
+			graphs = new OpenSequenceGraph("Rabbits and Grasses Populations",this);
 			// Register Displays
 			registerDisplaySurface("Carry Drop Model Window 1", displaySurf);
 			this.registerMediaProducer("Plot", graphs);
