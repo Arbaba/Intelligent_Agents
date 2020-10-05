@@ -14,5 +14,9 @@
 		<set class-name="template.Reactive"/>
 		<set discount-factor=".85"/>
 	</agent>
+	<agent name="picker">
+		<set class-path="bin/"/>
+		<set class-name="template.Picker"/>
+	</agent>
 	
 </agents>
