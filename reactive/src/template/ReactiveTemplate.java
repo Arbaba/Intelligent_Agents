@@ -1,6 +1,9 @@
 package template;
 
+import java.util.HashMap;
 import java.util.Random;
+
+import javax.management.RuntimeErrorException;
 
 import logist.simulation.Vehicle;
 import logist.agent.Agent;
@@ -19,6 +22,13 @@ public class ReactiveTemplate implements ReactiveBehavior {
 	private double pPickup;
 	private int numActions;
 	private Agent myAgent;
+	private HashMap<City, Integer> cityEncoding = new HashMap<City, Integer>();
+	private StepAction bestAction[][];
+
+	private enum StepAction{
+		MOVE,
+		PICKUP
+	}
 
 	@Override
 	public void setup(Topology topology, TaskDistribution td, Agent agent) {
@@ -42,7 +52,8 @@ public class ReactiveTemplate implements ReactiveBehavior {
 			City currentCity = vehicle.getCurrentCity();
 			action = new Move(currentCity.randomNeighbor(random));
 		} else {
-			action = new Pickup(availableTask);
+					action = new Pickup(availableTask);
+
 		}
 		
 		if (numActions >= 1) {
