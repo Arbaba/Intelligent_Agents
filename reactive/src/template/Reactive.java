@@ -110,17 +110,25 @@ public class Reactive implements ReactiveBehavior {
 
 	Topology topology;
 	TaskDistribution td;
-	double gamma = 0.003;
+	double gamma = 0.05;
 
 	private double rewardLookup(State s, StepAction action){
 		return rtable.get(s).get(action);
 	}
 
 	private double transitionLookup(State nextState){
-		return td.probability(nextState.from, nextState.to);
+		if(nextState.to != null) {
+			return td.probability(nextState.from, nextState.to);
+		}else {
+			double sum = 0.0;
+			for(City neighbor: nextState.from.neighbors()){
+				sum += td.probability(nextState.from, neighbor);
+			}
+			return 1 - sum ;
+		}
 	}
 
-	private double vLookup(State nextState, StepAction action){
+	private double vLookup(State nextState){
 		return vtable.get(nextState);
 	}
 	private void buildRtable(){
@@ -162,10 +170,9 @@ public class Reactive implements ReactiveBehavior {
 				for(StepAction action : actions){
 					Double value = rewardLookup(s, action) ;
 					for(State sPrime: states){
-						value += transitionLookup(sPrime) * vLookup(sPrime, action); 
+						value += transitionLookup(sPrime) * vLookup(sPrime); 
 					}
 					qtable.get(s).put(action, rewardLookup(s, action) + gamma * value);
-					//System.out.println( "--" + rewardLookup(s, action) + gamma * value);
 				}
 				delta += updateBestAction(s);
 				StepAction bestaction = besttable.get(s);
@@ -173,7 +180,6 @@ public class Reactive implements ReactiveBehavior {
 			}
 			System.out.println("DELTA: " + delta);
 		}
-
 	}
 	@Override
 	public void setup(Topology topology, TaskDistribution td, Agent agent) {
@@ -212,9 +218,7 @@ public class Reactive implements ReactiveBehavior {
 			for(StepAction action: actions){
 				rtable.get(state).put(action, 0.0);
 				qtable.get(state).put(action, 0.0);
-				if((action instanceof MOVE && state.from.hasNeighbor(((MOVE) action).getDestination())) || action instanceof PICKUP){
-					besttable.put(state,action);
-				}
+				
 			}
 
 		}
@@ -245,18 +249,6 @@ public class Reactive implements ReactiveBehavior {
 			}else {
 				action = new Pickup(availableTask);
 			}
-			/*if(optimalAction == null)throw new RuntimeException(vehicle.getCurrentCity().name + " " + ((availableTask.deliveryCity == null) ? "": availableTask.deliveryCity.name));
-			switch (optimalAction) {
-				case MOVE:
-					action = new Move(vehicle.getCurrentCity().randomNeighbor(random));
-					break;
-				case PICKUP:
-					action = new Pickup(availableTask);
-				default:
-					action = new Pickup(availableTask);
-
-					break;
-			}*/
 		}
 		
 		if (numActions >= 1) {
