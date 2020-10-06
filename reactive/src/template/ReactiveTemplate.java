@@ -56,7 +56,7 @@ public class ReactiveTemplate implements ReactiveBehavior {
 
 		}
 		
-		if (numActions >= 1) {
+		if (numActions >= 1 && numActions % 1000 == 0) {
 			System.out.println("Baseline Agent: The total profit after "+numActions+" actions is "+myAgent.getTotalProfit()+" (average profit: "+(myAgent.getTotalProfit() / (double)numActions)+")");
 		}
 		numActions++;

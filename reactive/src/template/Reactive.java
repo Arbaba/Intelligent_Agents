@@ -110,7 +110,7 @@ public class Reactive implements ReactiveBehavior {
 
 	Topology topology;
 	TaskDistribution td;
-	double gamma = 0.01;
+	double gamma = 0.07;
 
 	private double rewardLookup(State s, StepAction action){
 		return rtable.get(s).get(action);
@@ -120,10 +120,21 @@ public class Reactive implements ReactiveBehavior {
 		if(nextState.to != null) {
 			return td.probability(nextState.from, nextState.to);
 		}else {
+
 			double sum = 0.0;
+			/*
 			for(City neighbor: nextState.from.neighbors()){
 				sum += td.probability(nextState.from, neighbor);
 			}
+			*/
+			
+			for(City c: topology.cities()){
+				if (!c.equals(nextState.from)){
+					sum += td.probability(nextState.from, c);
+				}
+				
+			}
+			
 			return 1 - sum ;
 		}
 	}
@@ -204,6 +215,7 @@ public class Reactive implements ReactiveBehavior {
 		this.besttable = new HashMap<Reactive.State,Reactive.StepAction>();
 		this.actions = new ArrayList<Reactive.StepAction>();
 		this.actions.add(new PICKUP());
+		this.topology = topology;
 
 		for(City from: topology.cities()){
 			this.actions.add(new MOVE(from));
@@ -260,7 +272,7 @@ public class Reactive implements ReactiveBehavior {
 		} else {
 			throw new RuntimeException("Unknown action "  + optimalAction);
 		}
-		if (numActions >= 1) {
+		if (numActions >= 1 && numActions % 1000 == 0) {
 			System.out.println("Agent Reactive: "+ myAgent.id() + " The total profit after "+numActions+" actions is "+myAgent.getTotalProfit()+" (average profit: "+(myAgent.getTotalProfit() / (double)numActions)+")");
 		}
 		numActions++;
