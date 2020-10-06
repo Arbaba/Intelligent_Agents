@@ -24,10 +24,10 @@ import logist.topology.Topology.City;
 
 public class Reactive implements ReactiveBehavior {
 
-	private class StepAction{
+	private interface StepAction{
 
 	}
-	private class MOVE extends StepAction{
+	private class MOVE implements StepAction{
 		private City destination;
 		public MOVE(City d){
 			this.destination = d;
@@ -49,7 +49,7 @@ public class Reactive implements ReactiveBehavior {
 			return this.destination.equals(MOVE.destination);
 		}
 	}
-	private class PICKUP extends StepAction{
+	private class PICKUP implements StepAction{
 		@Override
 		public int hashCode(){
 			int hash = 6363;
@@ -162,19 +162,17 @@ public class Reactive implements ReactiveBehavior {
 
 	private void valueIteration(){
 		double epsilon = 0.000000000001;
-		double delta = 10;
+		double delta = Double.POSITIVE_INFINITY;
 		while(delta > epsilon){
 			delta = 0.0;
 			for(State s: states){
 				for(StepAction action : actions){
 					if(!(action instanceof PICKUP && s.to == null)) {
-
 						Double value = rewardLookup(s, action) ;
 						for(State sPrime: states){
 							value += transitionLookup(sPrime) * vLookup(sPrime); 
 						}
 						qtable.get(s).put(action, rewardLookup(s, action) + gamma * value);
-					
 					delta += updateBestAction(s);
 					StepAction bestaction = besttable.get(s);
 					vtable.put(s, qtable.get(s).get(bestaction));
