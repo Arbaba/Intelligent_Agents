@@ -167,15 +167,19 @@ public class Reactive implements ReactiveBehavior {
 			delta = 0.0;
 			for(State s: states){
 				for(StepAction action : actions){
-					Double value = rewardLookup(s, action) ;
-					for(State sPrime: states){
-						value += transitionLookup(sPrime) * vLookup(sPrime); 
+					if(!(action instanceof PICKUP && s.to == null)) {
+
+						Double value = rewardLookup(s, action) ;
+						for(State sPrime: states){
+							value += transitionLookup(sPrime) * vLookup(sPrime); 
+						}
+						qtable.get(s).put(action, rewardLookup(s, action) + gamma * value);
+					
+					delta += updateBestAction(s);
+					StepAction bestaction = besttable.get(s);
+					vtable.put(s, qtable.get(s).get(bestaction));
 					}
-					qtable.get(s).put(action, rewardLookup(s, action) + gamma * value);
 				}
-				delta += updateBestAction(s);
-				StepAction bestaction = besttable.get(s);
-				vtable.put(s, qtable.get(s).get(bestaction));
 			}
 			System.out.println("DELTA: " + delta);
 		}
@@ -215,8 +219,11 @@ public class Reactive implements ReactiveBehavior {
 			qtable.put(state, new HashMap<Reactive.StepAction,Double>());
 			rtable.put(state, new HashMap<StepAction, Double>());
 			for(StepAction action: actions){
-				rtable.get(state).put(action, 0.0);
-				qtable.get(state).put(action, 0.0);
+				if(!(state.to == null && action instanceof PICKUP)){
+					rtable.get(state).put(action, 0.0);
+					qtable.get(state).put(action, 0.0);
+				}
+		
 				
 			}
 
@@ -233,23 +240,26 @@ public class Reactive implements ReactiveBehavior {
 	@Override
 	public Action act(Vehicle vehicle, Task availableTask) {
 		Action action;
+		State s; 
 
 		if (availableTask == null) { //REMOVED THE RANDOM ELEMENT, PROBABLY THE MAJOR PROBLEM
 			City currentCity = vehicle.getCurrentCity();
+			s = new State(vehicle.getCurrentCity(),null);
 			action = new Move(currentCity.randomNeighbor(random));
 		} else {
-			State s = new State(vehicle.getCurrentCity(), availableTask.deliveryCity);
-			System.out.println(s.hashCode());
+			s = new State(vehicle.getCurrentCity(), availableTask.deliveryCity);
 
-			StepAction optimalAction = besttable.get(s);
-
-			if(optimalAction instanceof MOVE){
-				action = new Move(((MOVE)optimalAction).getDestination());
-			}else {
-				action = new Pickup(availableTask);
-			}
 		}
-		
+		StepAction optimalAction = besttable.get(s);
+
+		if(optimalAction instanceof MOVE){
+			action = new Move(((MOVE)optimalAction).getDestination());
+		}else if (optimalAction instanceof PICKUP){
+			if(availableTask == null)throw new RuntimeException("Null task");
+			action = new Pickup(availableTask);
+		} else {
+			throw new RuntimeException("Unknown action "  + optimalAction);
+		}
 		if (numActions >= 1) {
 			System.out.println("Agent Reactive: "+ myAgent.id() + " The total profit after "+numActions+" actions is "+myAgent.getTotalProfit()+" (average profit: "+(myAgent.getTotalProfit() / (double)numActions)+")");
 		}
