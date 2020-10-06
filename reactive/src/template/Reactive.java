@@ -110,7 +110,7 @@ public class Reactive implements ReactiveBehavior {
 
 	Topology topology;
 	TaskDistribution td;
-	double gamma = 0.05;
+	double gamma = 0.01;
 
 	private double rewardLookup(State s, StepAction action){
 		return rtable.get(s).get(action);
@@ -137,32 +137,31 @@ public class Reactive implements ReactiveBehavior {
 	
 				 if (action instanceof MOVE){
 					 MOVE MOVE  = (MOVE) action;
-					rtable.get(s).put(action,  5 *  s.from.distanceTo(MOVE.destination));
+					rtable.get(s).put(action,  - 5 * s.from.distanceTo(MOVE.destination)); //FORGOT THE MINUS
 				}else if(action instanceof PICKUP && s.to != null) {
-					rtable.get(s).put(action, (td.reward(s.from, s.to) - 5 *  s.from.distanceTo(s.to)));
-
+					rtable.get(s).put(action, (td.reward(s.from, s.to) - 5 * s.from.distanceTo(s.to)));
 				}
 			}
 		}
 	}
+
 	private double updateBestAction(State s){
 		Double max = Double.NEGATIVE_INFINITY;
 		double prev = vtable.get(s);
 		for(Map.Entry<StepAction, Double> entry: qtable.get(s).entrySet()){
 			//Check the reward is higher and that we don't have an illegal move to a non-neighboring city
-			if(entry.getValue() > max  && !(entry.getKey() instanceof MOVE && ! s.from.hasNeighbor(((MOVE) entry.getKey()).getDestination() ))){
+			if(entry.getValue() > max  && !(entry.getKey() instanceof MOVE && !s.from.hasNeighbor(((MOVE) entry.getKey()).getDestination() ))){
 				max = entry.getValue();
 				besttable.put(s, entry.getKey());
 				vtable.put(s, entry.getValue());
 			}
 		}
-		return Math.pow(prev - max,2 );
-
+		return Math.pow(prev - vtable.get(s),2 ); //CHANGED before was Math.pow(prev - max,2 ) trying to avoid divergence, didn't work
 	}
 
 
 	private void valueIteration(){
-		double epsilon = 0.0000001;
+		double epsilon = 0.000000000001;
 		double delta = 10;
 		while(delta > epsilon){
 			delta = 0.0;
@@ -235,7 +234,7 @@ public class Reactive implements ReactiveBehavior {
 	public Action act(Vehicle vehicle, Task availableTask) {
 		Action action;
 
-		if (availableTask == null || random.nextDouble() > pPickup) {
+		if (availableTask == null) { //REMOVED THE RANDOM ELEMENT, PROBABLY THE MAJOR PROBLEM
 			City currentCity = vehicle.getCurrentCity();
 			action = new Move(currentCity.randomNeighbor(random));
 		} else {
