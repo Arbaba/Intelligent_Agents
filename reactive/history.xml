@@ -4,3 +4,9 @@
 	<agents>
 		<agent name="reactive-random">
 			<vehicle name="Vehicle 1"/>
+		</agent>
+		<agent name="reactive">
+			<vehicle name="Vehicle 2"/>
+		</agent>
+		<agent name="picker">
+			<vehicle name="Vehicle 3"/>
