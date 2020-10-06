@@ -110,7 +110,7 @@ public class Reactive implements ReactiveBehavior {
 
 	Topology topology;
 	TaskDistribution td;
-	double gamma = 0.3;
+	double gamma = 0.003;
 
 	private double rewardLookup(State s, StepAction action){
 		return rtable.get(s).get(action);
@@ -130,7 +130,7 @@ public class Reactive implements ReactiveBehavior {
 				 if (action instanceof MOVE){
 					 MOVE MOVE  = (MOVE) action;
 					rtable.get(s).put(action,  5 *  s.from.distanceTo(MOVE.destination));
-				}else if(action instanceof PICKUP) {
+				}else if(action instanceof PICKUP && s.to != null) {
 					rtable.get(s).put(action, (td.reward(s.from, s.to) - 5 *  s.from.distanceTo(s.to)));
 
 				}
@@ -141,7 +141,8 @@ public class Reactive implements ReactiveBehavior {
 		Double max = Double.NEGATIVE_INFINITY;
 		double prev = vtable.get(s);
 		for(Map.Entry<StepAction, Double> entry: qtable.get(s).entrySet()){
-			if(entry.getValue() > max ){
+			//Check the reward is higher and that we don't have an illegal move to a non-neighboring city
+			if(entry.getValue() > max  && !(entry.getKey() instanceof MOVE && ! s.from.hasNeighbor(((MOVE) entry.getKey()).getDestination() ))){
 				max = entry.getValue();
 				besttable.put(s, entry.getKey());
 				vtable.put(s, entry.getValue());
@@ -153,7 +154,7 @@ public class Reactive implements ReactiveBehavior {
 
 
 	private void valueIteration(){
-		double epsilon = 0.0001;
+		double epsilon = 0.0000001;
 		double delta = 10;
 		while(delta > epsilon){
 			delta = 0.0;
@@ -202,7 +203,7 @@ public class Reactive implements ReactiveBehavior {
 				states.add(state);
 				System.out.println(state.from.name + " " + state.to.name);
 			}
-			//states.add(new State(from, null));
+			states.add(new State(from, null));
 		}
 		for(State state: states){
 			vtable.put(state, Double.valueOf(0.0) );
@@ -211,8 +212,9 @@ public class Reactive implements ReactiveBehavior {
 			for(StepAction action: actions){
 				rtable.get(state).put(action, 0.0);
 				qtable.get(state).put(action, 0.0);
-				besttable.put(state,action);
-
+				if((action instanceof MOVE && state.from.hasNeighbor(((MOVE) action).getDestination())) || action instanceof PICKUP){
+					besttable.put(state,action);
+				}
 			}
 
 		}
@@ -223,92 +225,6 @@ public class Reactive implements ReactiveBehavior {
 		}
 		buildRtable();
 		valueIteration();
-		/*int numberCities = topology.cities().size();
-		bestAction = new StepAction[numberCities][numberCities + 1];
-		double qtable[][][] = new double[numberCities][numberCities + 1][2]; 
-
-
-		double epsilon = 0.0000000001;
-		double delta = 1;
-		double rtable[][][] = new double[numberCities][numberCities + 1][2];
-		double vtable[][]  = new double[numberCities][numberCities + 1];
-
-
-
-
-		
-		for(int i = 0; i < numberCities; i++){
-			cityEncoding.put(topology.cities().get(i), i);
-		}
-		for(int i = 0; i < numberCities; i++){
-			double noTaskCost = 0.0;
-			for(int j=0; j < numberCities; j++){
-				City from = topology.cities().get(i);
-				City to =topology.cities().get(j);
-				for(int k=0; k< 2; k++){
-					if(k == StepAction.MOVE.ordinal()){
-						rtable[i][j][k] = -5 *  from.distanceTo(to);
-						if(from.hasNeighbor(to)){
-							noTaskCost +=  (td.reward(from, to) - 5 *  from.distanceTo(to))/ ((double)from.neighbors().size());
-						}
-					}else if (k == StepAction.PICKUP.ordinal()){
-						rtable[i][j][k] = td.reward(from, to) - 5 *  from.distanceTo(to);
-					}
-				}	
-			}
-			//Reward of moving to a random city is the average of the cost for going to a random city
-			rtable[i][numberCities][StepAction.MOVE.ordinal()] =  noTaskCost;
-		}
-		int iteration = 0;
-		while(delta > epsilon){
-			delta = 0;
-			for(int i = 0; i < numberCities; i++){
-				City from = topology.cities().get(i);
-				for(int j=0; j < numberCities; j++){
-					
-					City to =topology.cities().get(j);
-				
-					double tSum = 0.0;
-					//p((c2,c3) | Action, (c1,c2)) = p(c2,c3)
-					for(City c: topology.cities()){
-						if(from == null || to == null || c == null){
-							throw new RuntimeException("Null City");
-						}
-						tSum += 2 * td.probability(to, c)* vtable[j][cityEncoding.get(c)];
-
-					}
-					//p((c2,#) | Action, (c1,c2)) = 1 - sum c3 <-neighbors(c2)[p(c2,c3)]
-					double tSumNoTask =0.0;
-					for(City c: to.neighbors()){
-						if(from == null || to == null || c == null){
-							throw new RuntimeException("Null City");
-						}
-						tSumNoTask += td.probability(to, c);
-					}
-					tSum += 2 * (1 - tSumNoTask) * vtable[i][i + 1];
-					qtable[i][j][0] = rtable[i][j][0] + gamma * tSum;
-					qtable[i][j][1] = rtable[i][j][1] + gamma * tSum;
-
-					qtable[i][numberCities][StepAction.MOVE.ordinal()] = rtable[i][numberCities][StepAction.MOVE.ordinal()];
-					if(qtable[i][j][StepAction.MOVE.ordinal()] > qtable[i][j][StepAction.PICKUP.ordinal()]){
-						bestAction[i][j] = StepAction.MOVE;
-						delta += Math.pow(vtable[i][j] - qtable[i][j][StepAction.MOVE.ordinal()], 2) ;
-						vtable[i][j] = qtable[i][j][StepAction.MOVE.ordinal()];
-					}else {
-						bestAction[i][j] = StepAction.PICKUP;
-						delta += Math.pow(vtable[i][j] - qtable[i][j][StepAction.PICKUP.ordinal()],2) ;
-						vtable[i][j] = qtable[i][j][StepAction.PICKUP.ordinal()];
-					}
-					delta = Math.abs(delta);
-					System.out.println(String.format("Agent ID: %d Iteration %d: delta: %f",agent.id(), iteration, delta));
-					iteration++;
-				}
-
-			}
-			
-			
-		}*/
-
 	}
 
 	@Override
