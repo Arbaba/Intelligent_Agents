@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<history configuration="config\deliberative.xml">
+	<agents>
+		<agent name="deliberative-random">
+			<vehicle name="Vehicle 1"/>
+		</agent>
+	</agents>
+	<rounds>
+		<round id="1">
+			<tasks>
+				<task id="0" pickup="Aarau" delivery="Genève" weight="3" reward="36797"/>
+				<task id="1" pickup="Zürich" delivery="Sion" weight="3" reward="40875"/>
+				<task id="2" pickup="Sion" delivery="Genève" weight="3" reward="59223"/>
+				<task id="3" pickup="Basel" delivery="St-Gallen" weight="3" reward="59223"/>
+				<task id="4" pickup="Lausanne" delivery="St-Gallen" weight="3" reward="18448"/>
+				<task id="5" pickup="Sion" delivery="Basel" weight="3" reward="46991"/>
+			</tasks>
+			<events>
+				<event id="0" time="0" vehicle="Vehicle 1" move="Fribourg"/>
+				<event id="1" time="1111111048" vehicle="Vehicle 1" move="Bern"/>
+				<event id="2" time="1666666568" vehicle="Vehicle 1" move="Aarau"/>
+				<event id="3" time="2888888713" vehicle="Vehicle 1" pickup="0"/>
+				<event id="4" time="3188888694" vehicle="Vehicle 1" move="Bern"/>
+				<event id="5" time="4411110834" vehicle="Vehicle 1" move="Fribourg"/>
+				<event id="6" time="4966666350" vehicle="Vehicle 1" move="Lausanne"/>
+				<event id="7" time="6077777392" vehicle="Vehicle 1" move="Genève"/>
+				<event id="8" time="7077777333" vehicle="Vehicle 1" deliver="0"/>
+				<event id="9" time="7377777308" vehicle="Vehicle 1" move="Lausanne"/>
+				<event id="10" time="8377777244" vehicle="Vehicle 1" move="Fribourg"/>
+				<event id="11" time="9488888277" vehicle="Vehicle 1" move="Bern"/>
+				<event id="12" time="10044443796" vehicle="Vehicle 1" move="Aarau"/>
+				<event id="13" time="11266665941" vehicle="Vehicle 1" move="Zürich"/>
+				<event id="14" time="11933332566" vehicle="Vehicle 1" pickup="1"/>
+				<event id="15" time="12233332551" vehicle="Vehicle 1" move="Aarau"/>
+				<event id="16" time="12899999171" vehicle="Vehicle 1" move="Bern"/>
+				<event id="17" time="14122221324" vehicle="Vehicle 1" move="Thun"/>
+				<event id="18" time="14566665739" vehicle="Vehicle 1" move="Sion"/>
+				<event id="19" time="15899998999" vehicle="Vehicle 1" deliver="1"/>
+				<event id="20" time="16199998983" vehicle="Vehicle 1" pickup="2"/>
+				<event id="21" time="16499998964" vehicle="Vehicle 1" move="Lausanne"/>
+				<event id="22" time="18166665523" vehicle="Vehicle 1" move="Genève"/>
+				<event id="23" time="19166665462" vehicle="Vehicle 1" deliver="2"/>
+				<event id="24" time="19466665440" vehicle="Vehicle 1" move="Lausanne"/>
+				<event id="25" time="20466665375" vehicle="Vehicle 1" move="Fribourg"/>
+				<event id="26" time="21577776415" vehicle="Vehicle 1" move="Bern"/>
+				<event id="27" time="22133331936" vehicle="Vehicle 1" move="Basel"/>
+				<event id="28" time="23688887393" vehicle="Vehicle 1" pickup="3"/>
+				<event id="29" time="23988887373" vehicle="Vehicle 1" move="Zürich"/>
+				<event id="30" time="25322220621" vehicle="Vehicle 1" move="St-Gallen"/>
+				<event id="31" time="26655553862" vehicle="Vehicle 1" deliver="3"/>
+				<event id="32" time="26955553841" vehicle="Vehicle 1" move="Zürich"/>
+				<event id="33" time="28288887080" vehicle="Vehicle 1" move="Aarau"/>
+				<event id="34" time="28955553708" vehicle="Vehicle 1" move="Bern"/>
+				<event id="35" time="30177775850" vehicle="Vehicle 1" move="Fribourg"/>
+				<event id="36" time="30733331367" vehicle="Vehicle 1" move="Lausanne"/>
+				<event id="37" time="31844442408" vehicle="Vehicle 1" pickup="4"/>
+				<event id="38" time="32144442388" vehicle="Vehicle 1" move="Fribourg"/>
+				<event id="39" time="33255553428" vehicle="Vehicle 1" move="Bern"/>
+				<event id="40" time="33811108950" vehicle="Vehicle 1" move="Aarau"/>
+				<event id="41" time="35033331091" vehicle="Vehicle 1" move="Zürich"/>
+				<event id="42" time="35699997716" vehicle="Vehicle 1" move="St-Gallen"/>
+				<event id="43" time="37033330957" vehicle="Vehicle 1" deliver="4"/>
+				<event id="44" time="37333330936" vehicle="Vehicle 1" move="Zürich"/>
+				<event id="45" time="38666664181" vehicle="Vehicle 1" move="Aarau"/>
+				<event id="46" time="39333330807" vehicle="Vehicle 1" move="Bern"/>
+				<event id="47" time="40555552943" vehicle="Vehicle 1" move="Thun"/>
+				<event id="48" time="40999997357" vehicle="Vehicle 1" move="Sion"/>
+				<event id="49" time="42333330602" vehicle="Vehicle 1" pickup="5"/>
+				<event id="50" time="42633330581" vehicle="Vehicle 1" move="Thun"/>
+				<event id="51" time="43966663822" vehicle="Vehicle 1" move="Bern"/>
+				<event id="52" time="44411108236" vehicle="Vehicle 1" move="Basel"/>
+				<event id="53" time="45966663681" vehicle="Vehicle 1" deliver="5"/>
+			</events>
+		</round>
+	</rounds>
+	<statistics>
+		<stat rank="1" agent="deliberative-random">
+			<total-tasks value="6"/>
+			<total-distance value="3840.0"/>
+			<total-cost value="19200"/>
+			<total-reward value="261557"/>
+			<total-profit value="242357"/>
+		</stat>
+	</statistics>
+</history>
