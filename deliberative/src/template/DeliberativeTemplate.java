@@ -62,7 +62,6 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}
 		public boolean isGoal(){
 			return (toPick.size()==0 && picked.size()==0);
-
 		}
 
 		@Override
@@ -128,6 +127,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	
 	public List<Neighbor> computeNeighbors(State state, ArrayList<Action> prevActions, City initialCity){
 		List<Neighbor> neighbors =  new ArrayList<Neighbor>();
+		
 		if(state.isGoal()){
 			System.out.println("no neighbors");
 			return neighbors;
@@ -162,7 +162,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		for(City city: state.currentCity.neighbors()){
 			System.out.println("MOVE");
 			State newState = state.moveTo(city);
-			Node newNode = new Node(state);
+			Node newNode = new Node(newState);
 			double cost = state.currentCity.distanceTo(city);
 			List<Action> actions = new ArrayList<Action>(prevActions);
 			actions.add(new Move(city));
@@ -268,6 +268,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		Neighbor bestNode = null;
 		double minCost = Double.MAX_VALUE;
 		int counter = 0;
+
 		while(Q.size() != 0){
 			System.out.println(counter);
 			counter++;
@@ -278,8 +279,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				System.out.println("Goal reached");
 				return neighbor.plan;
 			}
-			System.out.println("to pick: " + neighbor.node.state.toPick.size());
 
+			System.out.println("Current City" + neighbor.node.state.currentCity);
 			if(!C.contains(node)){
 				C.add(node);//put in list of visited nodes
 				ArrayList<Action> prevActions = new ArrayList<Action>();
