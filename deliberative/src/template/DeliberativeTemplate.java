@@ -46,7 +46,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		public State removePickedTask(Task t){
 			List<Task> updatedToPick = new ArrayList<Task>(toPick);
 			updatedToPick.remove(t);
-			return new State(currentCity, toPick, picked);
+			return new State(currentCity, updatedToPick, picked);
 		}
 		//moves task from toPick and adds it to picked
 		public State pickTask(Task t){
@@ -54,7 +54,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			List<Task> updatedPicked = new ArrayList<Task>(picked);
 			updatedPicked.add(t);
 			updatedToPick.remove(t);
-			return new State(currentCity, toPick, picked);
+			return new State(currentCity, updatedToPick, updatedPicked);
 		} 
 
 		public State moveTo(City city){
@@ -120,6 +120,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		//delivery
 		for(Task task: state.picked){
 			if(task.deliveryCity == state.currentCity){
+				System.out.println("DELIVER");
 				State newState = state.removePickedTask(task);
 				List<Action> actions = new ArrayList<Action>(prevActions);
 				actions.add(new Delivery(task));
@@ -132,6 +133,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		//pickup
 		for(Task task: state.toPick){
 			if(state.currentCity == task.pickupCity){
+				System.out.println("PICK");
 				State newState = state.pickTask(task);
 				List<Action> actions = new ArrayList<Action>(prevActions);
 				actions.add(new Pickup(task));
@@ -143,6 +145,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}
 		//move
 		for(City city: state.currentCity.neighbors()){
+			System.out.println("MOVE");
 			State newState = state.moveTo(city);
 			Node newNode = new Node(state);
 			double cost = state.currentCity.distanceTo(city);
@@ -256,7 +259,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			Neighbor neighbor = Q.pop();
 			Node node = neighbor.node;
 			double cost = neighbor.cost;
-			if(node.isGoal()  || counter == 2000){
+			if(node.isGoal()){
 				return neighbor.plan;
 			}
 			System.out.println("to pick: " + neighbor.node.state.toPick.size());
@@ -278,7 +281,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			}
 		}
 		System.out.println("Done");
-		return plan.EMPTY;
+		return plan;
 
 	}
 	 Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
