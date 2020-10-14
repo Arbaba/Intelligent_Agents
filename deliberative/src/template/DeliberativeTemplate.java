@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
-
+import java.util.Collections;
+import java.util.Comparator;
 /* import table */
 import logist.simulation.Vehicle;
 import logist.agent.Agent;
@@ -36,6 +37,11 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			this.toPick = new ArrayList<Task>(toPick);
 			this.picked = new ArrayList<Task>(picked);
 		}
+		public State(City currentCity, List<Task> toPick){
+			this.currentCity = currentCity;
+			this.toPick = new ArrayList<Task>(toPick);
+			this.picked = new ArrayList<Task>();
+		}
 		//removes task from picked
 		public State removePickedTask(Task t){
 			List<Task> updatedToPick = new ArrayList<Task>(toPick);
@@ -63,13 +69,15 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	
 	public class Node{
 		State state;
-		List<Neighbor> neighbors;
+		//List<Neighbor> neighbors;
 		public Node(State state){
 			this.state = state;
 		}
 		public boolean isGoal(){
 			return state.isGoal();
 		}
+
+
 	
 	}
 	public class Neighbor{
@@ -80,6 +88,10 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			this.node = node;
 			this.plan = plan;
 			this.cost = cost;
+		}
+
+		public void decrease(double cost2) {
+			this.cost -= cost2;
 		}
 	}
 	
@@ -198,35 +210,51 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}
 		return plan;
 	}
-
+	class NeighborComparator implements Comparator<Neighbor> 
+	{ 
+		// Used for sorting in ascending order of 
+		// roll number 
+		public int compare(Neighbor a, Neighbor b) 
+		{ 
+			return (int) (a.cost - b.cost); 
+		} 
+	}
 	private Plan bfsPlan(Vehicle vehicle, TaskSet tasks){
 		City current = vehicle.getCurrentCity();
 		Plan plan = new Plan(current);
+		List<Task> toPick = new ArrayList<Task>();
 
-		
-		Node initNode = new Node(new State(current, new ArrayList<Task>(Arrays.asList(tasks.toArray())), new ArrayList<Task>()));
+		for(Task t: tasks){
+			toPick.add(t);
+		}
+		Node initNode = new Node(new State(current, toPick));
 
 		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
-		Q.add(initNode);
-		LinkedList<Neighbor> C = new LinkedList<Neighbor>();
+		Q.add(new Neighbor(initNode, Plan.EMPTY, 0));
+		LinkedList<Node> C = new LinkedList<Node>();
 		Neighbor bestNode = null;
-		double minCost = DOUBLE.MAX_POSITIVE_INFINITY;
+		double minCost = Double.MAX_VALUE;
 		while(Q.size() != 0){
 			Neighbor neighbor = Q.pop();
-			Node node = neighbor.node
-			double cost = neighbor.cost
-			actionToReachThisNode = neighbor.action
-			node.plan.append(action);
-			if(node.isGoal){
+			Node node = neighbor.node;
+			double cost = neighbor.cost;
+			if(node.isGoal()){
 				return neighbor.plan;
 			}
 			if(!C.contains(node)){
-				C.add(node)//put in list of visited nodes
-				for(n : node.neighbors()){
-					Q.append(n)
+				C.add(node);//put in list of visited nodes
+				ArrayList<Action> prevActions = new ArrayList<Action>();
+				for(Action action : neighbor.plan){
+					prevActions.add(action);
 				}
-				Q = Q.stream().foreach(n -> n.decrease(cost)).collect()
-				Q = Q.sort.stream().sorted(Comparator.cmparingInt(Neighbor::cost)).collect();
+				List<Neighbor> neighbors = computeNeighbors(node.state, prevActions, initNode.state.currentCity);
+				for(Neighbor n : neighbors){
+					Q.add(n);
+				}
+				for(Neighbor n: neighbors){
+					n.decrease(cost);
+				}
+				Collections.sort(Q, new NeighborComparator());
 			}
 		}
 
