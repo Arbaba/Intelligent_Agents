@@ -129,7 +129,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	
 	
 	
-	public List<Neighbor> computeNeighbors(State state, ArrayList<Action> prevActions, City initialCity){
+	public List<Neighbor> computeNeighbors(State state, ArrayList<Action> prevActions, City initialCity, double cost){
 		List<Neighbor> neighbors =  new ArrayList<Neighbor>();
 		
 		if(state.isGoal()){
@@ -146,8 +146,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				logger.write(action);
 
 				Node newNode = new Node(newState);
-				int cost = 0;
-				neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), cost));
+				int c = 0;
+				neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c));
 			}
 		}
 			
@@ -160,8 +160,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				actions.add(action);
 				logger.write(action);
 				Node newNode = new Node(newState);
-				int cost = 0;
-				neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), cost));
+				int c = 0;
+				neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c));
 			}
 			
 		}
@@ -169,12 +169,12 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		for(City city: state.currentCity.neighbors()){
 			State newState = state.moveTo(city);
 			Node newNode = new Node(newState);
-			double cost = state.currentCity.distanceTo(city);
+			double c = state.currentCity.distanceTo(city);
 			List<Action> actions = new ArrayList<Action>(prevActions);
 			Action action = new Move(city);
 			actions.add(action);
 			logger.write(action);
-			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), cost));
+			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c - cost));
 		}
 		return neighbors;
 	}
@@ -344,17 +344,19 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				for(Action action : neighbor.plan){
 					prevActions.add(action);
 				}
-				List<Neighbor> neighbors = computeNeighbors(node.state, prevActions, initNode.state.currentCity);
+				List<Neighbor> neighbors = computeNeighbors(node.state, prevActions, initNode.state.currentCity, cost);
+
 				for(Neighbor n : neighbors){
 					Q.add(n);
 				}
-				for(Neighbor n: neighbors){
-					n.decrease(cost);
-				}
-				Collections.sort(Q, new NeighborComparator());
-			}else {
-				//System.out.println("discard");
 
+				if(counter == 1000){
+					for(Neighbor n : Q){
+						System.out.println(n.cost);
+					}
+				}
+
+				Collections.sort(Q, new NeighborComparator());
 			}
 		}
 		System.out.println("Done");
