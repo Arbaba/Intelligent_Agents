@@ -1,6 +1,8 @@
 package template;
 
 import java.util.List;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -119,8 +121,10 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		public void decrease(double cost2) {
 			this.cost -= cost2;
 		}
-
-		return String.format("Neighbor {node: %s, plan: %s, cost %f}", node, plan, cost);
+		@Override
+		public String toString() {
+			return String.format("Neighbor {node: %s, plan: %s, cost %f}", node, plan, cost);
+		}
 	}
 	
 	
@@ -129,16 +133,18 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		List<Neighbor> neighbors =  new ArrayList<Neighbor>();
 		
 		if(state.isGoal()){
-			System.out.println("no neighbors");
+			//System.out.println("no neighbors");
 			return neighbors;
 		}
 		//delivery
 		for(Task task: state.picked){
 			if(task.deliveryCity == state.currentCity){
-				System.out.println("DELIVER");
 				State newState = state.removePickedTask(task);
 				List<Action> actions = new ArrayList<Action>(prevActions);
-				actions.add(new Delivery(task));
+				Action action =  new Delivery(task);
+				actions.add(action);
+				logger.write(action);
+
 				Node newNode = new Node(newState);
 				int cost = 0;
 				neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), cost));
@@ -148,10 +154,11 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		//pickup
 		for(Task task: state.toPick){
 			if(state.currentCity == task.pickupCity){
-				System.out.println("PICK");
 				State newState = state.pickTask(task);
 				List<Action> actions = new ArrayList<Action>(prevActions);
-				actions.add(new Pickup(task));
+				Action action = new Pickup(task);
+				actions.add(action);
+				logger.write(action);
 				Node newNode = new Node(newState);
 				int cost = 0;
 				neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), cost));
@@ -160,12 +167,13 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}
 		//move
 		for(City city: state.currentCity.neighbors()){
-			System.out.println("MOVE");
 			State newState = state.moveTo(city);
 			Node newNode = new Node(newState);
 			double cost = state.currentCity.distanceTo(city);
 			List<Action> actions = new ArrayList<Action>(prevActions);
-			actions.add(new Move(city));
+			Action action = new Move(city);
+			actions.add(action);
+			logger.write(action);
 			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), cost));
 		}
 		return neighbors;
@@ -184,7 +192,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 	/* the planning class */
 	Algorithm algorithm;
-	
+	Logger logger ;
+
 	@Override
 	public void setup(Topology topology, TaskDistribution td, Agent agent) {
 		this.topology = topology;
@@ -197,7 +206,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		
 		// Throws IllegalArgumentException if algorithm is unknown
 		algorithm = Algorithm.valueOf(algorithmName.toUpperCase());
-		
+		logger = new Logger();
 		// ...
 	}
 	
@@ -243,6 +252,54 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}
 		return plan;
 	}
+	public  static class Logger{
+		
+		FileWriter writer;
+		int writerCount;
+		public Logger(){
+			writerCount = 0;
+			try {
+				
+				writer = new FileWriter("log.txt");
+			} catch (Exception e) {
+				//TODO: handle exception
+			}
+		}
+		
+		public  void logCounter(int counter){
+			if(counter % 1000 == 0 || true ) {
+				write("Counter: " +  counter);
+			}
+		}
+		public  void logNode(Node n){
+			write(n.toString());
+		}
+
+		public void write(String str){
+			writerCount++;
+			writeToFile(str);
+			writeToConsole(str);
+		}
+		public void write(Object o){
+			writerCount++;
+			writeToFile(o.toString());
+			writeToConsole(o.toString());
+		}
+		public void writeToFile(String str){
+			try {
+				
+				writer.write(str + "\n");
+				if(writerCount % 100 == 0){
+					writer.flush();
+				}
+			} catch (Exception e) {
+				//TODO: handle exception
+			}
+		}
+		public void writeToConsole(String str){
+			System.out.println(str);
+		}
+	}
 	class NeighborComparator implements Comparator<Neighbor> 
 	{ 
 		// Used for sorting in ascending order of 
@@ -256,7 +313,6 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		City current = vehicle.getCurrentCity();
 		Plan plan = new Plan(current);
 		List<Task> toPick = new ArrayList<Task>();
-
 		for(Task t: tasks){
 			toPick.add(t);
 		}
@@ -268,21 +324,21 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		Neighbor bestNode = null;
 		double minCost = Double.MAX_VALUE;
 		int counter = 0;
-
 		while(Q.size() != 0){
-			System.out.println(counter);
+			logger.logCounter(counter);
 			counter++;
 			Neighbor neighbor = Q.pop();
 			Node node = neighbor.node;
 			double cost = neighbor.cost;
 			if(node.isGoal()){
-				System.out.println("Goal reached");
+				//System.out.println("Goal reached");
 				return neighbor.plan;
 			}
 
-			System.out.println("Current City" + neighbor.node.state.currentCity);
+			//System.out.println("Current City" + neighbor.node.state.currentCity);
 			if(!C.contains(node)){
 				C.add(node);//put in list of visited nodes
+				logger.logNode(node);
 				ArrayList<Action> prevActions = new ArrayList<Action>();
 				for(Action action : neighbor.plan){
 					prevActions.add(action);
@@ -296,7 +352,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				}
 				Collections.sort(Q, new NeighborComparator());
 			}else {
-				System.out.println("discard");
+				//System.out.println("discard");
 
 			}
 		}
