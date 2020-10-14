@@ -72,8 +72,10 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			return false;
 			State thatState = (State) that;
 			return this.currentCity.equals(thatState.currentCity)
-					&& toPick.equals(thatState.toPick)
-					&& picked.equals(thatState.picked);
+					&& toPick.size() == thatState.toPick.size()
+					&& picked.size() == thatState.picked.size()
+					&& toPick.containsAll(thatState.toPick)
+					&& picked.containsAll(thatState.picked);
 		}
 
 		
@@ -120,6 +122,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		public void decrease(double cost2) {
 			this.cost -= cost2;
+			if(this.cost < 0){
+				throw new RuntimeException();
+			}
 		}
 		@Override
 		public String toString() {
@@ -174,7 +179,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			Action action = new Move(city);
 			actions.add(action);
 			logger.write(action);
-			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c - cost));
+			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c ));
 		}
 		return neighbors;
 	}
@@ -280,6 +285,18 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			writeToFile(str);
 			writeToConsole(str);
 		}
+
+		public void writeQueue(LinkedList<Neighbor> queue, Node node){
+			StringBuilder b = new StringBuilder(String.format("Queue (current node %s): \n", node.state.currentCity));
+			for(Neighbor n: queue){
+				Action a = null;
+				for(Action aprime: n.plan){
+					a = aprime;
+				}
+				b.append(String.format("   city: %s, cost: %f, lastAction: %s\n", n.node.state.currentCity, n.cost, a));
+			}
+			write(b.toString());
+		}
 		public void write(Object o){
 			writerCount++;
 			writeToFile(o.toString());
@@ -289,9 +306,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			try {
 				
 				writer.write(str + "\n");
-				if(writerCount % 100 == 0){
 					writer.flush();
-				}
+				
 			} catch (Exception e) {
 				//TODO: handle exception
 			}
@@ -333,11 +349,17 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			if(node.isGoal()){
 				//System.out.println("Goal reached");
 				logger.write("Goal reached");
+				logger.write(neighbor.plan);
 				return neighbor.plan;
 			}
 
 			//System.out.println("Current City" + neighbor.node.state.currentCity);
 			if(!C.contains(node)){
+				for(Neighbor n: Q){
+					n.decrease(neighbor.cost);
+				}
+				logger.writeQueue(Q, node);
+
 				C.add(node);//put in list of visited nodes
 				logger.logNode(node);
 				ArrayList<Action> prevActions = new ArrayList<Action>();
