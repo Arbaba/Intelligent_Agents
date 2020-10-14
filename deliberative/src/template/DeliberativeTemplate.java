@@ -2,6 +2,8 @@ package template;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 
 /* import table */
 import logist.simulation.Vehicle;
@@ -123,6 +125,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}
 		return neighbors;
 	}
+
+
 	enum Algorithm { BFS, ASTAR }
 	
 	/* Environment */
@@ -198,6 +202,33 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	private Plan bfsPlan(Vehicle vehicle, TaskSet tasks){
 		City current = vehicle.getCurrentCity();
 		Plan plan = new Plan(current);
+
+		
+		Node initNode = new Node(new State(current, new ArrayList<Task>(Arrays.asList(tasks.toArray())), new ArrayList<Task>()));
+
+		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
+		Q.add(initNode);
+		LinkedList<Neighbor> C = new LinkedList<Neighbor>();
+		Neighbor bestNode = null;
+		double minCost = DOUBLE.MAX_POSITIVE_INFINITY;
+		while(Q.size() != 0){
+			Neighbor neighbor = Q.pop();
+			Node node = neighbor.node
+			double cost = neighbor.cost
+			actionToReachThisNode = neighbor.action
+			node.plan.append(action);
+			if(node.isGoal){
+				return neighbor.plan;
+			}
+			if(!C.contains(node)){
+				C.add(node)//put in list of visited nodes
+				for(n : node.neighbors()){
+					Q.append(n)
+				}
+				Q = Q.stream().foreach(n -> n.decrease(cost)).collect()
+				Q = Q.sort.stream().sorted(Comparator.cmparingInt(Neighbor::cost)).collect();
+			}
+		}
 
 		for (Task task : tasks) {
 			// move: current city => pickup location
