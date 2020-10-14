@@ -75,6 +75,12 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 					&& picked.equals(thatState.picked);
 		}
 
+		
+		@Override
+		public String toString() {
+			return String.format("State {city: %s, picked: %s, toPick: %s}", currentCity, picked, toPick);
+		}
+
 	}
 	
 	public class Node{
@@ -93,6 +99,12 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			Node thatNode = (Node) that;
 			return this.state.equals(thatNode.state);
 		}
+
+		@Override
+		public String toString() {
+			// TODO Auto-generated method stub
+			return String.format("Node { %s}", state);
+		}
 	
 	}
 	public class Neighbor{
@@ -108,6 +120,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		public void decrease(double cost2) {
 			this.cost -= cost2;
 		}
+
+		return String.format("Neighbor {node: %s, plan: %s, cost %f}", node, plan, cost);
 	}
 	
 	
@@ -115,6 +129,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	public List<Neighbor> computeNeighbors(State state, ArrayList<Action> prevActions, City initialCity){
 		List<Neighbor> neighbors =  new ArrayList<Neighbor>();
 		if(state.isGoal()){
+			System.out.println("no neighbors");
 			return neighbors;
 		}
 		//delivery
@@ -260,6 +275,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			Node node = neighbor.node;
 			double cost = neighbor.cost;
 			if(node.isGoal()){
+				System.out.println("Goal reached");
 				return neighbor.plan;
 			}
 			System.out.println("to pick: " + neighbor.node.state.toPick.size());
@@ -278,6 +294,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 					n.decrease(cost);
 				}
 				Collections.sort(Q, new NeighborComparator());
+			}else {
+				System.out.println("discard");
+
 			}
 		}
 		System.out.println("Done");
