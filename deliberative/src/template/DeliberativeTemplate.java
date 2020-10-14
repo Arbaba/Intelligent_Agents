@@ -46,9 +46,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}
 		//removes task from picked
 		public State removePickedTask(Task t){
-			List<Task> updatedToPick = new ArrayList<Task>(toPick);
-			updatedToPick.remove(t);
-			return new State(currentCity, updatedToPick, picked);
+			List<Task> updatedPicked = new ArrayList<Task>(picked);
+			updatedPicked.remove(t);
+			return new State(currentCity, toPick, updatedPicked);
 		}
 		//moves task from toPick and adds it to picked
 		public State pickTask(Task t){
@@ -332,6 +332,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			double cost = neighbor.cost;
 			if(node.isGoal()){
 				//System.out.println("Goal reached");
+				logger.write("Goal reached");
 				return neighbor.plan;
 			}
 
