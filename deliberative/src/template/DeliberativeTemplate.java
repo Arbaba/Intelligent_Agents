@@ -65,6 +65,16 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		}
 
+		@Override
+		public boolean equals(Object that){
+			if (!(that instanceof State)) 
+			return false;
+			State thatState = (State) that;
+			return this.currentCity.equals(thatState.currentCity)
+					&& toPick.equals(thatState.toPick)
+					&& picked.equals(thatState.picked);
+		}
+
 	}
 	
 	public class Node{
@@ -76,8 +86,13 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		public boolean isGoal(){
 			return state.isGoal();
 		}
-
-
+		@Override
+		public boolean equals(Object that){
+			if (!(that instanceof Node)) 
+			return false;
+			Node thatNode = (Node) that;
+			return this.state.equals(thatNode.state);
+		}
 	
 	}
 	public class Neighbor{
@@ -234,13 +249,18 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		LinkedList<Node> C = new LinkedList<Node>();
 		Neighbor bestNode = null;
 		double minCost = Double.MAX_VALUE;
+		int counter = 0;
 		while(Q.size() != 0){
+			System.out.println(counter);
+			counter++;
 			Neighbor neighbor = Q.pop();
 			Node node = neighbor.node;
 			double cost = neighbor.cost;
-			if(node.isGoal()){
+			if(node.isGoal()  || counter == 2000){
 				return neighbor.plan;
 			}
+			System.out.println("to pick: " + neighbor.node.state.toPick.size());
+
 			if(!C.contains(node)){
 				C.add(node);//put in list of visited nodes
 				ArrayList<Action> prevActions = new ArrayList<Action>();
@@ -257,24 +277,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				Collections.sort(Q, new NeighborComparator());
 			}
 		}
+		System.out.println("Done");
+		return plan.EMPTY;
 
-		for (Task task : tasks) {
-			// move: current city => pickup location
-			for (City city : current.pathTo(task.pickupCity))
-				plan.appendMove(city);
-
-			plan.appendPickup(task);
-
-			// move: pickup location => delivery location
-			for (City city : task.path())
-				plan.appendMove(city);
-
-			plan.appendDelivery(task);
-
-			// set current city
-			current = task.deliveryCity;
-		}
-		return plan;
 	}
 	 Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
 		City current = vehicle.getCurrentCity();
