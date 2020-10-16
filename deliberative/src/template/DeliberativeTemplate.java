@@ -48,7 +48,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		public State removePickedTask(Task t){
 			List<Task> updatedPicked = new ArrayList<Task>(picked);
 			updatedPicked.remove(t);
-			return new State(currentCity, toPick, updatedPicked);
+			return new State(t.deliveryCity, toPick, updatedPicked);
 		}
 		//moves task from toPick and adds it to picked
 		public State pickTask(Task t){
@@ -56,7 +56,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			List<Task> updatedPicked = new ArrayList<Task>(picked);
 			updatedPicked.add(t);
 			updatedToPick.remove(t);
-			return new State(currentCity, updatedToPick, updatedPicked);
+			return new State(t.pickupCity, updatedToPick, updatedPicked);
 		} 
 
 		public State moveTo(City city){
@@ -114,6 +114,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		double cost;
 		Node node;
 		Plan plan;
+		
 		public Neighbor(Node node, Plan plan, double cost){
 			this.node = node;
 			this.plan = plan;
@@ -126,6 +127,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				throw new RuntimeException();
 			}
 		}
+
+
+
 		@Override
 		public String toString() {
 			return String.format("Neighbor {node: %s, plan: %s, cost %f}", node, plan, cost);
@@ -143,43 +147,38 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}
 		//delivery
 		for(Task task: state.picked){
-			if(task.deliveryCity == state.currentCity){
-				State newState = state.removePickedTask(task);
-				List<Action> actions = new ArrayList<Action>(prevActions);
-				Action action =  new Delivery(task);
-				actions.add(action);
-				logger.write(action);
+			State newState = state.removePickedTask(task);
+			List<Action> actions = new ArrayList<Action>(prevActions);
+			int c = 0;
+			cost = state.currentCity.distanceTo(task.deliveryCity);
+			for (City city : state.currentCity.pathTo(task.deliveryCity))
+				actions.add(new Move(city));
+			
+			Action action =  new Delivery(task);
+			actions.add(action);
+			logger.write(action);
 
-				Node newNode = new Node(newState);
-				int c = 0;
-				neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c));
-			}
+
+			Node newNode = new Node(newState);
+			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c));
 		}
 			
 		//pickup
 		for(Task task: state.toPick){
-			if(state.currentCity == task.pickupCity){
-				State newState = state.pickTask(task);
-				List<Action> actions = new ArrayList<Action>(prevActions);
-				Action action = new Pickup(task);
-				actions.add(action);
-				logger.write(action);
-				Node newNode = new Node(newState);
-				int c = 0;
-				neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c));
-			}
-			
-		}
-		//move
-		for(City city: state.currentCity.neighbors()){
-			State newState = state.moveTo(city);
-			Node newNode = new Node(newState);
-			double c = state.currentCity.distanceTo(city);
+			State newState = state.pickTask(task);
 			List<Action> actions = new ArrayList<Action>(prevActions);
-			Action action = new Move(city);
-			actions.add(action);
+
+			Node newNode = new Node(newState);
+			int c = 0;
+			cost = state.currentCity.distanceTo(task.pickupCity);
+			for (City city : state.currentCity.pathTo(task.pickupCity))
+					actions.add(new Move(city));			
+			
+			Action action = new Pickup(task);
 			logger.write(action);
-			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c ));
+			actions.add(action);
+			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c));
+			
 		}
 		return neighbors;
 	}
@@ -282,8 +281,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		public void write(String str){
 			writerCount++;
-			writeToFile(str);
-			writeToConsole(str);
+			write((Object) str);
 		}
 
 		public void writeQueue(LinkedList<Neighbor> queue, Node node){
@@ -293,14 +291,15 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				for(Action aprime: n.plan){
 					a = aprime;
 				}
-				b.append(String.format("   city: %s, cost: %f, lastAction: %s\n", n.node.state.currentCity, n.cost, a));
+				//b.append(String.format("   city: %s, cost: %f, lastAction: %s\n", n.node.state.currentCity, n.cost, a));
 			}
 			write(b.toString());
 		}
+
 		public void write(Object o){
 			writerCount++;
-			writeToFile(o.toString());
-			writeToConsole(o.toString());
+			//writeToFile(o.toString());
+			//writeToConsole(o.toString());
 		}
 		public void writeToFile(String str){
 			try {
@@ -337,6 +336,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
 		Q.add(new Neighbor(initNode, Plan.EMPTY, 0));
 		LinkedList<Node> C = new LinkedList<Node>();
+		
 		Neighbor bestNode = null;
 		double minCost = Double.MAX_VALUE;
 		int counter = 0;
@@ -352,7 +352,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				logger.write(neighbor.plan);
 				return neighbor.plan;
 			}
-
+			
 			//System.out.println("Current City" + neighbor.node.state.currentCity);
 			if(!C.contains(node)){
 				for(Neighbor n: Q){
@@ -371,13 +371,6 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				for(Neighbor n : neighbors){
 					Q.add(n);
 				}
-
-				if(counter == 1000){
-					for(Neighbor n : Q){
-						System.out.println(n.cost);
-					}
-				}
-
 				Collections.sort(Q, new NeighborComparator());
 			}
 		}
