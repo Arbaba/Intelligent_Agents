@@ -9,7 +9,8 @@ import java.util.LinkedList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-
+import java.util.HashSet;
+import java.util.Set;
 /* import table */
 import logist.simulation.Vehicle;
 import logist.agent.Agent;
@@ -33,24 +34,29 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 	public class State{
 		City currentCity;
-		List<Task> toPick;
-		List<Task> picked;
+		Set<Task> toPick;
+		Set<Task> picked;
 
+		public State(City currentCity, Set<Task> toPick, Set<Task> picked){
+			this.currentCity = currentCity;
+			this.toPick = new HashSet<Task>(toPick);
+			this.picked = new HashSet<Task>(picked);
+		}
 		public State(City currentCity, List<Task> toPick, List<Task> picked){
 			this.currentCity = currentCity;
-			this.toPick = new ArrayList<Task>(toPick);
-			this.picked = new ArrayList<Task>(picked);
+			this.toPick = new HashSet<Task>(toPick);
+			this.picked = new HashSet<Task>(picked);
 		}
 		public State(City currentCity, List<Task> toPick){
 			this.currentCity = currentCity;
-			this.toPick = new ArrayList<Task>(toPick);
-			this.picked = new ArrayList<Task>();
+			this.toPick = new  HashSet<Task>(toPick);
+			this.picked = new  HashSet<Task>();
 		}
 		//removes task from picked
 		public State removePickedTask(Task t){
 			List<Task> updatedPicked = new ArrayList<Task>(picked);
 			updatedPicked.remove(t);
-			return new State(t.deliveryCity, toPick, updatedPicked);
+			return new State(t.deliveryCity, new ArrayList<Task>(toPick), updatedPicked);
 		}
 		//moves task from toPick and adds it to picked
 		public State pickTask(Task t){
@@ -79,7 +85,15 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 					&& toPick.containsAll(thatState.toPick)
 					&& picked.containsAll(thatState.picked);
 		}
-
+		@Override
+		public int hashCode() {
+			// TODO Auto-generated method stub
+			int hash = 5581;
+			hash = 33*hash + currentCity.hashCode();
+			hash = 33*hash + toPick.hashCode();
+			hash = 33*hash + picked.hashCode();
+			return hash;		
+		}
 		
 		@Override
 		public String toString() {
