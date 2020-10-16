@@ -36,26 +36,24 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		City currentCity;
 		Set<Task> toPick;
 		Set<Task> picked;
-
+		double capacityLeft;
 		public State(City currentCity, Set<Task> toPick, Set<Task> picked){
 			this.currentCity = currentCity;
 			this.toPick = new HashSet<Task>(toPick);
 			this.picked = new HashSet<Task>(picked);
+			capacityLeft = capacity ;
 		}
 		public State(City currentCity, List<Task> toPick, List<Task> picked){
-			this.currentCity = currentCity;
-			this.toPick = new HashSet<Task>(toPick);
-			this.picked = new HashSet<Task>(picked);
+			this(currentCity, new HashSet<Task>(toPick), new HashSet<Task>(picked));
 		}
 		public State(City currentCity, List<Task> toPick){
-			this.currentCity = currentCity;
-			this.toPick = new  HashSet<Task>(toPick);
-			this.picked = new  HashSet<Task>();
+			this(currentCity, new HashSet<Task>(toPick), new HashSet<Task>());
 		}
 		//removes task from picked
 		public State removePickedTask(Task t){
 			List<Task> updatedPicked = new ArrayList<Task>(picked);
 			updatedPicked.remove(t);
+			capacityLeft += t.weight;
 			return new State(t.deliveryCity, new ArrayList<Task>(toPick), updatedPicked);
 		}
 		//moves task from toPick and adds it to picked
@@ -63,9 +61,14 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			List<Task> updatedToPick = new ArrayList<Task>(toPick);
 			List<Task> updatedPicked = new ArrayList<Task>(picked);
 			updatedPicked.add(t);
+			capacityLeft -= t.weight;
 			updatedToPick.remove(t);
 			return new State(t.pickupCity, updatedToPick, updatedPicked);
 		} 
+
+		public boolean canPickup(Task t){
+			return t.weight <= capacityLeft;
+		}
 
 		public State moveTo(City city){
 			return new State(city, toPick, picked);
@@ -181,18 +184,20 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			
 		//pickup
 		for(Task task: state.toPick){
-			State newState = state.pickTask(task);
-			List<Action> actions = new ArrayList<Action>();
-
-			Node newNode = new Node(newState);
-			double cost = parentCost + state.currentCity.distanceTo(task.pickupCity);
-			for (City city : state.currentCity.pathTo(task.pickupCity))
-					actions.add(new Move(city));			
-			
-			Action action = new Pickup(task);
-			logger.write(action);
-			actions.add(action);
-			neighbors.add(new Neighbor(newNode, parent, actions, cost));
+			if(state.canPickup(task)){
+				State newState = state.pickTask(task);
+				List<Action> actions = new ArrayList<Action>();
+	
+				Node newNode = new Node(newState);
+				double cost = parentCost + state.currentCity.distanceTo(task.pickupCity);
+				for (City city : state.currentCity.pathTo(task.pickupCity))
+						actions.add(new Move(city));			
+				
+				Action action = new Pickup(task);
+				logger.write(action);
+				actions.add(action);
+				neighbors.add(new Neighbor(newNode, parent, actions, cost));
+			}
 			
 		}
 		return neighbors;
@@ -212,15 +217,15 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	/* the planning class */
 	Algorithm algorithm;
 	Logger logger ;
-
+	List<Task> carriedTasks;
 	@Override
 	public void setup(Topology topology, TaskDistribution td, Agent agent) {
 		this.topology = topology;
 		this.td = td;
 		this.agent = agent;
-		
+		this.carriedTasks = new ArrayList<Task>();
 		// initialize the planner
-		int capacity = agent.vehicles().get(0).capacity();
+		capacity = agent.vehicles().get(0).capacity();
 		String algorithmName = agent.readProperty("algorithm", String.class, "ASTAR");
 		
 		// Throws IllegalArgumentException if algorithm is unknown
@@ -313,8 +318,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		public void write(Object o){
 			writerCount++;
-			writeToFile(o.toString());
-			writeToConsole(o.toString());
+			//writeToFile(o.toString());
+			//writeToConsole(o.toString());
 		}
 		public void writeToFile(String str){
 			try {
@@ -346,7 +351,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		for(Task t: tasks){
 			toPick.add(t);
 		}
-		Node initNode = new Node(new State(current, toPick));
+		Node initNode = new Node(new State(current, toPick, carriedTasks));
 
 		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
 		Q.add(new Neighbor(initNode, null, new ArrayList<Action>(),0));
@@ -438,6 +443,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			// This cannot happen for this simple agent, but typically
 			// you will need to consider the carriedTasks when the next
 			// plan is computed.
+			this.carriedTasks = new ArrayList<Task>(carriedTasks);
 		}
 	}
 }
