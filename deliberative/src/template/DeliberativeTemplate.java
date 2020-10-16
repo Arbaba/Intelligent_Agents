@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+
 /* import table */
 import logist.simulation.Vehicle;
 import logist.agent.Agent;
@@ -113,11 +115,14 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	public class Neighbor{
 		double cost;
 		Node node;
-		Plan plan;
-		
-		public Neighbor(Node node, Plan plan, double cost){
+
+		Neighbor closestParent;
+		List<Action> parentActions;
+
+		public Neighbor(Node node, Neighbor closestParent, List<Action>  parentActions ,double cost){
 			this.node = node;
-			this.plan = plan;
+			this.closestParent = closestParent;
+			this.parentActions = parentActions;
 			this.cost = cost;
 		}
 
@@ -132,15 +137,15 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		@Override
 		public String toString() {
-			return String.format("Neighbor {node: %s, plan: %s, cost %f}", node, plan, cost);
+			return String.format("Neighbor {node: %s, cost %f}", node, cost);
 		}
 	}
 	
 	
 	
-	public List<Neighbor> computeNeighbors(State state, ArrayList<Action> prevActions, City initialCity, double cost){
+	public List<Neighbor> computeNeighbors(Neighbor parent, double parentCost ){
 		List<Neighbor> neighbors =  new ArrayList<Neighbor>();
-		
+		State state = parent.node.state;
 		if(state.isGoal()){
 			//System.out.println("no neighbors");
 			return neighbors;
@@ -148,36 +153,32 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		//delivery
 		for(Task task: state.picked){
 			State newState = state.removePickedTask(task);
-			List<Action> actions = new ArrayList<Action>(prevActions);
-			int c = 0;
-			cost = state.currentCity.distanceTo(task.deliveryCity);
+			List<Action> actions = new ArrayList<Action>();
+			double cost = parentCost + state.currentCity.distanceTo(task.deliveryCity);
 			for (City city : state.currentCity.pathTo(task.deliveryCity))
 				actions.add(new Move(city));
 			
 			Action action =  new Delivery(task);
 			actions.add(action);
 			logger.write(action);
-
-
 			Node newNode = new Node(newState);
-			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c));
+			neighbors.add(new Neighbor(newNode,parent, actions, cost));
 		}
 			
 		//pickup
 		for(Task task: state.toPick){
 			State newState = state.pickTask(task);
-			List<Action> actions = new ArrayList<Action>(prevActions);
+			List<Action> actions = new ArrayList<Action>();
 
 			Node newNode = new Node(newState);
-			int c = 0;
-			cost = state.currentCity.distanceTo(task.pickupCity);
+			double cost = parentCost + state.currentCity.distanceTo(task.pickupCity);
 			for (City city : state.currentCity.pathTo(task.pickupCity))
 					actions.add(new Move(city));			
 			
 			Action action = new Pickup(task);
 			logger.write(action);
 			actions.add(action);
-			neighbors.add(new Neighbor(newNode, new Plan(initialCity, actions), c));
+			neighbors.add(new Neighbor(newNode, parent, actions, cost));
 			
 		}
 		return neighbors;
@@ -288,9 +289,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			StringBuilder b = new StringBuilder(String.format("Queue (current node %s): \n", node.state.currentCity));
 			for(Neighbor n: queue){
 				Action a = null;
-				for(Action aprime: n.plan){
+				/*for(Action aprime: n.plan){
 					a = aprime;
-				}
+				}*/
 				//b.append(String.format("   city: %s, cost: %f, lastAction: %s\n", n.node.state.currentCity, n.cost, a));
 			}
 			write(b.toString());
@@ -298,8 +299,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		public void write(Object o){
 			writerCount++;
-			//writeToFile(o.toString());
-			//writeToConsole(o.toString());
+			writeToFile(o.toString());
+			writeToConsole(o.toString());
 		}
 		public void writeToFile(String str){
 			try {
@@ -334,9 +335,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		Node initNode = new Node(new State(current, toPick));
 
 		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
-		Q.add(new Neighbor(initNode, Plan.EMPTY, 0));
-		LinkedList<Node> C = new LinkedList<Node>();
-		
+		Q.add(new Neighbor(initNode, null, new ArrayList<Action>(),0));
+		HashMap<State, Neighbor> C = new HashMap<State, Neighbor>();		
 		Neighbor bestNode = null;
 		double minCost = Double.MAX_VALUE;
 		int counter = 0;
@@ -349,24 +349,21 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			if(node.isGoal()){
 				//System.out.println("Goal reached");
 				logger.write("Goal reached");
-				logger.write(neighbor.plan);
-				return neighbor.plan;
 			}
-			
+			//If we already visited the node we check if the cost is inferior
+			if(C.containsKey(neighbor.node.state) && C.get(neighbor.node.state).cost > cost){
+				C.replace(neighbor.node.state, neighbor);
+		
+			}
+
 			//System.out.println("Current City" + neighbor.node.state.currentCity);
-			if(!C.contains(node)){
-				for(Neighbor n: Q){
-					n.decrease(neighbor.cost);
-				}
+			if(!C.containsKey(node.state)){
 				logger.writeQueue(Q, node);
 
-				C.add(node);//put in list of visited nodes
+				C.put(node.state, neighbor);//put in list of visited nodes
 				logger.logNode(node);
-				ArrayList<Action> prevActions = new ArrayList<Action>();
-				for(Action action : neighbor.plan){
-					prevActions.add(action);
-				}
-				List<Neighbor> neighbors = computeNeighbors(node.state, prevActions, initNode.state.currentCity, cost);
+	
+				List<Neighbor> neighbors = computeNeighbors(neighbor,  cost);
 
 				for(Neighbor n : neighbors){
 					Q.add(n);
@@ -374,8 +371,27 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				Collections.sort(Q, new NeighborComparator());
 			}
 		}
+
+		Neighbor best = null; 
+		double bestCost = Double.POSITIVE_INFINITY;
+
+		
+		for(Neighbor neighbor : C.values()){
+			if(neighbor.node.isGoal() && neighbor.cost < bestCost){
+				best = neighbor;
+				bestCost = neighbor.cost;
+			}
+		}
+		
+		LinkedList<Action> bestActions = new LinkedList<Action>();
+		while(!best.node.equals(initNode)){
+			for (int i = best.parentActions.size() - 1; i >= 0; i--) {
+				bestActions.addFirst(best.parentActions.get(i));
+			}
+			best = best.closestParent;
+		}
 		System.out.println("Done");
-		return plan;
+		return new Plan(initNode.state.currentCity, bestActions);
 
 	}
 	 Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
