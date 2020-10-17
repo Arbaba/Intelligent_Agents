@@ -257,24 +257,74 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	private Plan aStarPlan(Vehicle vehicle, TaskSet tasks){
 		City current = vehicle.getCurrentCity();
 		Plan plan = new Plan(current);
-
-		for (Task task : tasks) {
-			// move: current city => pickup location
-			for (City city : current.pathTo(task.pickupCity))
-				plan.appendMove(city);
-
-			plan.appendPickup(task);
-
-			// move: pickup location => delivery location
-			for (City city : task.path())
-				plan.appendMove(city);
-
-			plan.appendDelivery(task);
-
-			// set current city
-			current = task.deliveryCity;
+		List<Task> toPick = new ArrayList<Task>();
+		for(Task t: tasks){
+			toPick.add(t);
 		}
-		return plan;
+		Node initNode = new Node(new State(current, toPick, carriedTasks));
+
+		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
+		Q.add(new Neighbor(initNode, null, new ArrayList<Action>(),0));
+		HashMap<State, Neighbor> C = new HashMap<State, Neighbor>();		
+		Neighbor bestNode = null;
+		double minCost = Double.MAX_VALUE;
+		int counter = 0;
+		while(Q.size() != 0){
+			logger.logCounter(counter);
+			counter++;
+			Neighbor neighbor = Q.pop();
+			Node node = neighbor.node;
+			double cost = neighbor.cost;
+			if(node.isGoal()){
+				//System.out.println("Goal reached");
+				logger.write("Goal reached");
+			}
+			//If we already visited the node we check if the cost is inferior
+			if(C.containsKey(neighbor.node.state) && C.get(neighbor.node.state).cost > cost){
+				C.replace(neighbor.node.state, neighbor);
+		
+			}
+
+			//System.out.println("Current City" + neighbor.node.state.currentCity);
+			if(!C.containsKey(node.state)){
+				logger.writeQueue(Q, node);
+
+				C.put(node.state, neighbor);//put in list of visited nodes
+				logger.logNode(node);
+	
+				List<Neighbor> neighbors = computeNeighbors(neighbor,  cost);
+				for(Neighbor neigh: neighbors){
+					neighbor.cost += h(neigh);
+				}
+				
+				for(Neighbor n : neighbors){
+					Q.add(n);
+				}
+				Collections.sort(Q, new NeighborComparator());
+			}
+		}
+
+		Neighbor best = null; 
+		double bestCost = Double.POSITIVE_INFINITY;
+
+		
+		for(Neighbor neighbor : C.values()){
+			if(neighbor.node.isGoal() && neighbor.cost < bestCost){
+				best = neighbor;
+				bestCost = neighbor.cost;
+			}
+		}
+		
+		LinkedList<Action> bestActions = new LinkedList<Action>();
+		while(!best.node.equals(initNode)){
+			for (int i = best.parentActions.size() - 1; i >= 0; i--) {
+				bestActions.addFirst(best.parentActions.get(i));
+			}
+			best = best.closestParent;
+		}
+		System.out.println("Done");
+		return new Plan(initNode.state.currentCity, bestActions);
+
 	}
 	public  static class Logger{
 		
@@ -343,6 +393,23 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		{ 
 			return (int) (a.cost - b.cost); 
 		} 
+	}
+	private double h(Neighbor n){
+		double avgX = 0;
+		double avgY = 0;
+		double size = n.node.state.picked.size() + n.node.state.toPick.size();
+		for(Task t: n.node.state.picked){
+			avgX += t.deliveryCity.xPos;
+			avgY += t.deliveryCity.yPos;
+		}
+		for(Task t: n.node.state.toPick){
+			avgX += t.pickupCity.xPos;
+			avgY += t.pickupCity.yPos;
+		}
+		avgX /= size;
+		avgY /= size;
+
+		return Math.sqrt(Math.pow(n.node.state.currentCity.xPos - avgX, 2) + Math.pow(n.node.state.currentCity.yPos - avgY, 2));
 	}
 	private Plan bfsPlan(Vehicle vehicle, TaskSet tasks){
 		City current = vehicle.getCurrentCity();
