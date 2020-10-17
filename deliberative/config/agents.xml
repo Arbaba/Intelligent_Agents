@@ -9,5 +9,15 @@
 		<set class-name="template.DeliberativeTemplate"/>
 		<set algorithm="BFS"/>
 	</agent>
+	<agent name="deliberative-ASTAR">
+		<set class-path="bin/"/>
+		<set class-name="template.DeliberativeTemplate"/>
+		<set algorithm="ASTAR"/>
+	</agent>
+	<agent name="deliberative-dijkstra">
+		<set class-path="bin/"/>
+		<set class-name="template.DeliberativeDijkstra"/>
+		<set algorithm="BFS"/>
+	</agent>
 	
 </agents>
