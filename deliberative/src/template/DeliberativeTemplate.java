@@ -237,7 +237,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	@Override
 	public Plan plan(Vehicle vehicle, TaskSet tasks) {
 		Plan plan;
-
+		System.out.println(algorithm);
 		// Compute the plan with the selected algorithm.
 		switch (algorithm) {
 		case ASTAR:
@@ -255,6 +255,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	}
 	
 	private Plan aStarPlan(Vehicle vehicle, TaskSet tasks){
+		System.out.println("Build ASTAR plan");
 		City current = vehicle.getCurrentCity();
 		Plan plan = new Plan(current);
 		List<Task> toPick = new ArrayList<Task>();
@@ -266,7 +267,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
 		Q.add(new Neighbor(initNode, null, new ArrayList<Action>(),0));
 		HashMap<State, Neighbor> C = new HashMap<State, Neighbor>();		
-		Neighbor bestNode = null;
+		Neighbor best = null;
 		double minCost = Double.MAX_VALUE;
 		int counter = 0;
 		while(Q.size() != 0){
@@ -277,7 +278,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			double cost = neighbor.cost;
 			if(node.isGoal()){
 				//System.out.println("Goal reached");
+				best = neighbor;
 				logger.write("Goal reached");
+				break;
 			}
 			//If we already visited the node we check if the cost is inferior
 			if(C.containsKey(neighbor.node.state) && C.get(neighbor.node.state).cost > cost){
@@ -296,7 +299,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				for(Neighbor neigh: neighbors){
 					neighbor.cost += h(neigh);
 				}
-				
+
 				for(Neighbor n : neighbors){
 					Q.add(n);
 				}
@@ -304,17 +307,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			}
 		}
 
-		Neighbor best = null; 
 		double bestCost = Double.POSITIVE_INFINITY;
 
-		
-		for(Neighbor neighbor : C.values()){
-			if(neighbor.node.isGoal() && neighbor.cost < bestCost){
-				best = neighbor;
-				bestCost = neighbor.cost;
-			}
-		}
-		
+	
 		LinkedList<Action> bestActions = new LinkedList<Action>();
 		while(!best.node.equals(initNode)){
 			for (int i = best.parentActions.size() - 1; i >= 0; i--) {
@@ -368,8 +363,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		public void write(Object o){
 			writerCount++;
-			//writeToFile(o.toString());
-			//writeToConsole(o.toString());
+			writeToFile(o.toString());
+			writeToConsole(o.toString());
 		}
 		public void writeToFile(String str){
 			try {
