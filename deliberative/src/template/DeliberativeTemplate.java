@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -107,13 +108,14 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	
 	public class Node{
 		State state;
-		//List<Neighbor> neighbors;
+
 		public Node(State state){
 			this.state = state;
 		}
 		public boolean isGoal(){
 			return state.isGoal();
 		}
+
 		@Override
 		public boolean equals(Object that){
 			if (!(that instanceof Node)) 
@@ -152,6 +154,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 
 
+
 		@Override
 		public String toString() {
 			return String.format("Neighbor {node: %s, cost %f}", node, cost);
@@ -171,7 +174,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		for(Task task: state.picked){
 			State newState = state.removePickedTask(task);
 			List<Action> actions = new ArrayList<Action>();
-			double cost = parentCost + state.currentCity.distanceTo(task.deliveryCity);
+			double cost =  state.currentCity.distanceTo(task.deliveryCity);
 			for (City city : state.currentCity.pathTo(task.deliveryCity))
 				actions.add(new Move(city));
 			
@@ -179,6 +182,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			actions.add(action);
 			logger.write(action);
 			Node newNode = new Node(newState);
+			
 			neighbors.add(new Neighbor(newNode,parent, actions, cost));
 		}
 			
@@ -189,10 +193,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				List<Action> actions = new ArrayList<Action>();
 	
 				Node newNode = new Node(newState);
-				double cost = parentCost + state.currentCity.distanceTo(task.pickupCity);
+				double cost = state.currentCity.distanceTo(task.pickupCity);
 				for (City city : state.currentCity.pathTo(task.pickupCity))
 						actions.add(new Move(city));			
-				
 				Action action = new Pickup(task);
 				logger.write(action);
 				actions.add(action);
@@ -253,7 +256,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		}		
 		return plan;
 	}
-	
+
 	private Plan aStarPlan(Vehicle vehicle, TaskSet tasks){
 		System.out.println("Build ASTAR plan");
 		City current = vehicle.getCurrentCity();
@@ -285,17 +288,16 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			//If we already visited the node we check if the cost is inferior
 			if(C.containsKey(neighbor.node.state) && C.get(neighbor.node.state).cost > cost){
 				C.replace(neighbor.node.state, neighbor);
-		
 			}
 
 			//System.out.println("Current City" + neighbor.node.state.currentCity);
 			if(!C.containsKey(node.state)){
 				logger.writeQueue(Q, node);
-
 				C.put(node.state, neighbor);//put in list of visited nodes
 				logger.logNode(node);
 	
 				List<Neighbor> neighbors = computeNeighbors(neighbor,  cost);
+
 				for(Neighbor neigh: neighbors){
 					neighbor.cost += h(neigh);
 				}
@@ -406,6 +408,15 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		return Math.sqrt(Math.pow(n.node.state.currentCity.xPos - avgX, 2) + Math.pow(n.node.state.currentCity.yPos - avgY, 2));
 	}
+
+	private void updateCosts(Collection<Neighbor> C, Neighbor neighbor){
+			for(Neighbor n: C){
+				if(n.closestParent == neighbor){
+					n.cost = neighbor.cost + n.node.state.currentCity.distanceTo(neighbor.node.state.currentCity);
+					updateCosts(C, n);
+				}
+			}
+	}
 	private Plan bfsPlan(Vehicle vehicle, TaskSet tasks){
 		City current = vehicle.getCurrentCity();
 		Plan plan = new Plan(current);
@@ -428,16 +439,16 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			Node node = neighbor.node;
 			double cost = neighbor.cost;
 			if(node.isGoal()){
-				//System.out.println("Goal reached");
 				logger.write("Goal reached");
 			}
 			//If we already visited the node we check if the cost is inferior
 			if(C.containsKey(neighbor.node.state) && C.get(neighbor.node.state).cost > cost){
-				C.replace(neighbor.node.state, neighbor);
-		
+				C.get(neighbor.node.state).cost = neighbor.cost;
+				C.get(neighbor.node.state).closestParent = neighbor.closestParent;
+				C.get(neighbor.node.state).parentActions = neighbor.parentActions;
+				updateCosts(C.values(), C.get(neighbor.node.state));
 			}
 
-			//System.out.println("Current City" + neighbor.node.state.currentCity);
 			if(!C.containsKey(node.state)){
 				logger.writeQueue(Q, node);
 
@@ -445,11 +456,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				logger.logNode(node);
 	
 				List<Neighbor> neighbors = computeNeighbors(neighbor,  cost);
-
 				for(Neighbor n : neighbors){
 					Q.add(n);
 				}
-				Collections.sort(Q, new NeighborComparator());
 			}
 		}
 
