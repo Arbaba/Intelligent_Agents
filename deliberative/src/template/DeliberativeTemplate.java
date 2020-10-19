@@ -264,7 +264,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				List<Node> neighbors = computeNeighbors(node,  cost);
 				
 				for(Node neigh: neighbors){
-					neigh.fcost = node.cost + h(neigh, node);
+					neigh.fcost = node.cost + hMaxDistance(neigh);
+					//neigh.fcost = node.cost + hAvg(neigh, node);
+
 					//neigh.fcost = neighbor.cost;
 				}
 
@@ -366,7 +368,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	}
 
 	
-	private double h(Node n, Node parent){
+	private double hAverage(Node n, Node parent){
 		double avgX = 0;
 		double avgY = 0;
 		double size = parent.state.picked.size() + parent.state.toPick.size();
@@ -384,6 +386,31 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		return Math.sqrt(Math.pow(n.state.currentCity.xPos - avgX, 2) + Math.pow(n.state.currentCity.yPos - avgY, 2));
 	}
 	
+	private double hMaxDistance(Node n){
+		double maxDist = 0;
+		double dist;
+
+		for(Task t : n.state.toPick){
+			dist = n.state.currentCity.distanceTo(t.pickupCity);
+			if(dist > maxDist){
+				maxDist = dist;
+			}
+		}
+
+		for(Task t : n.state.picked){
+			dist = n.state.currentCity.distanceTo(t.deliveryCity);
+			if(dist > maxDist){
+				maxDist = dist;
+			}
+		}
+
+		return maxDist;
+	}
+
+	private double hMaxNearest(Node n){
+		
+		return 0.0;
+	}
 	/*
 	private double h(Neighbor n){
 		for(Neighbor n: n.)
