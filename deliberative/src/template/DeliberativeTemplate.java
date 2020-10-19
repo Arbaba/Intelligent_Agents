@@ -264,8 +264,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				List<Node> neighbors = computeNeighbors(node,  cost);
 				
 				for(Node neigh: neighbors){
-					neigh.fcost = node.cost + hMaxDistance(neigh);
+					//neigh.fcost = node.cost + hMaxDistance(neigh);
 					//neigh.fcost = node.cost + hAvg(neigh, node);
+					neigh.fcost = node.cost + hNearest(neigh);
 
 					//neigh.fcost = neighbor.cost;
 				}
@@ -407,9 +408,40 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		return maxDist;
 	}
 
-	private double hMaxNearest(Node n){
+	private double hNearest(Node n){
+		Task toRemovePicked = null;
+		Task toRemoveToPick = null;
+		double cost = 0.0;
+		HashSet<Task> toPick = new HashSet<Task>(n.state.toPick);
+		HashSet<Task> picked = new HashSet<Task>(n.state.picked);
+		while(toPick.size() + picked.size() > 0){
+			double costToPick = Double.POSITIVE_INFINITY;
+			double costPicked = Double.POSITIVE_INFINITY;
+			for(Task t: picked){
+				double dist = n.state.currentCity.distanceTo(t.deliveryCity);
+				if(dist < costPicked){
+					costPicked = dist;
+					toRemovePicked = t;
+				}
+			}
+			for(Task t: toPick){
+				double dist = n.state.currentCity.distanceTo(t.pickupCity);
+				if(dist < costToPick){
+					costToPick = dist;
+					toRemoveToPick = t;
+				}
+			}
+
+			if(costToPick < costPicked){
+				toPick.remove(toRemoveToPick);
+				cost += costToPick;
+			}else {
+				picked.remove(toRemovePicked);
+				cost += costPicked;
+			}
+		}
 		
-		return 0.0;
+		return cost;
 	}
 	/*
 	private double h(Neighbor n){
