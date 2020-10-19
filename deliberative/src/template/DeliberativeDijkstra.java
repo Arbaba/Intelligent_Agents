@@ -27,7 +27,7 @@ import logist.topology.Topology.City;
  * An optimal planner for one vehicle.
  */
 @SuppressWarnings("unused")
-public class DeliberativeTemplate implements DeliberativeBehavior {
+public class DeliberativeDijkstra implements DeliberativeBehavior {
 
 	public class State{
 		City currentCity;

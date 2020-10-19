@@ -133,6 +133,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	}
 	public class Neighbor{
 		double cost;
+		double fcost;
 		Node node;
 
 		Neighbor closestParent;
@@ -183,7 +184,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			logger.write(action);
 			Node newNode = new Node(newState);
 			
-			neighbors.add(new Neighbor(newNode,parent, actions, cost));
+			neighbors.add(new Neighbor(newNode,parent, actions, cost+parentCost));
 		}
 			
 		//pickup
@@ -199,7 +200,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				Action action = new Pickup(task);
 				logger.write(action);
 				actions.add(action);
-				neighbors.add(new Neighbor(newNode, parent, actions, cost));
+				neighbors.add(new Neighbor(newNode, parent, actions, cost+parentCost));
 			}
 			
 		}
@@ -275,6 +276,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		int counter = 0;
 		while(Q.size() != 0){
 			logger.logCounter(counter);
+			System.out.println(counter);
 			counter++;
 			Neighbor neighbor = Q.pop();
 			Node node = neighbor.node;
@@ -297,14 +299,16 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				logger.logNode(node);
 	
 				List<Neighbor> neighbors = computeNeighbors(neighbor,  cost);
-
+				
 				for(Neighbor neigh: neighbors){
-					neighbor.cost += h(neigh);
+					neigh.fcost = neighbor.cost + h(neigh, neighbor);
+					//neigh.fcost = neighbor.cost;
 				}
 
 				for(Neighbor n : neighbors){
 					Q.add(n);
 				}
+
 				Collections.sort(Q, new NeighborComparator());
 			}
 		}
@@ -365,8 +369,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		public void write(Object o){
 			writerCount++;
-			writeToFile(o.toString());
-			writeToConsole(o.toString());
+			//writeToFile(o.toString());
+			//writeToConsole(o.toString());
 		}
 		public void writeToFile(String str){
 			try {
@@ -388,26 +392,40 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		// roll number 
 		public int compare(Neighbor a, Neighbor b) 
 		{ 
-			return (int) (a.cost - b.cost); 
+			if (a.fcost < b.fcost)
+  				return -1;
+			else if (a.fcost > b.fcost)
+  				return 1;
+			else
+  				return 0;
+			//return (int) (a.fcost - b.fcost); 
 		} 
 	}
-	private double h(Neighbor n){
+
+	
+	private double h(Neighbor n, Neighbor parent){
 		double avgX = 0;
 		double avgY = 0;
-		double size = n.node.state.picked.size() + n.node.state.toPick.size();
-		for(Task t: n.node.state.picked){
+		double size = parent.node.state.picked.size() + parent.node.state.toPick.size();
+		for(Task t: parent.node.state.picked){
 			avgX += t.deliveryCity.xPos;
 			avgY += t.deliveryCity.yPos;
 		}
-		for(Task t: n.node.state.toPick){
+		for(Task t: parent.node.state.toPick){
 			avgX += t.pickupCity.xPos;
 			avgY += t.pickupCity.yPos;
 		}
 		avgX /= size;
 		avgY /= size;
 
-		return 0;//Math.sqrt(Math.pow(n.node.state.currentCity.xPos - avgX, 2) + Math.pow(n.node.state.currentCity.yPos - avgY, 2));
+		return Math.sqrt(Math.pow(n.node.state.currentCity.xPos - avgX, 2) + Math.pow(n.node.state.currentCity.yPos - avgY, 2));
 	}
+	
+	/*
+	private double h(Neighbor n){
+		for(Neighbor n: n.)
+		return 0;
+	}*/
 
 	private void updateCosts(Collection<Neighbor> Q, Neighbor parent){
 		logger.write("inside");
@@ -434,6 +452,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 		while(Q.size() != 0){
 			logger.logCounter(counter);
+			System.out.println(counter);
 			counter++;
 			Neighbor neighbor = Q.pop();
 			Node node = neighbor.node;
