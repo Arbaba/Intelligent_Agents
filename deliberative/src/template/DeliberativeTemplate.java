@@ -184,7 +184,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			logger.write(action);
 			Node newNode = new Node(newState);
 			
-			neighbors.add(new Neighbor(newNode,parent, actions, cost+parentCost));
+			neighbors.add(new Neighbor(newNode,parent, actions, cost));
 		}
 			
 		//pickup
@@ -200,7 +200,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				Action action = new Pickup(task);
 				logger.write(action);
 				actions.add(action);
-				neighbors.add(new Neighbor(newNode, parent, actions, cost+parentCost));
+				neighbors.add(new Neighbor(newNode, parent, actions, cost));
 			}
 			
 		}
