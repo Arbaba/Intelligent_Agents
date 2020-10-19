@@ -106,67 +106,33 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 	}
 	
-	public class Node{
-		State state;
-
-		public Node(State state){
-			this.state = state;
-		}
-		public boolean isGoal(){
-			return state.isGoal();
-		}
-
-		@Override
-		public boolean equals(Object that){
-			if (!(that instanceof Node)) 
-			return false;
-			Node thatNode = (Node) that;
-			return this.state.equals(thatNode.state);
-		}
-
-		@Override
-		public String toString() {
-			// TODO Auto-generated method stub
-			return String.format("Node { %s}", state);
-		}
 	
-	}
-	public class Neighbor{
+	public class Node{
 		double cost;
 		double fcost;
-		Node node;
+		State state;
 
-		Neighbor closestParent;
+		Node closestParent;
 		List<Action> parentActions;
 
-		public Neighbor(Node node, Neighbor closestParent, List<Action>  parentActions ,double cost){
-			this.node = node;
+		public Node(State state,  Node  closestParent, List<Action>  parentActions ,double cost){
+			this.state = state;
 			this.closestParent = closestParent;
 			this.parentActions = parentActions;
 			this.cost = cost;
 		}
 
-		public void decrease(double cost2) {
-			this.cost -= cost2;
-			if(this.cost < 0){
-				throw new RuntimeException();
-			}
-		}
-
-
-
-
 		@Override
 		public String toString() {
-			return String.format("Neighbor {node: %s, cost %f}", node, cost);
+			return String.format("Neighbor {state: %s, cost %f}", state, cost);
 		}
 	}
 	
 	
 	
-	public List<Neighbor> computeNeighbors(Neighbor parent, double parentCost ){
-		List<Neighbor> neighbors =  new ArrayList<Neighbor>();
-		State state = parent.node.state;
+	public List<Node> computeNeighbors(Node parent, double parentCost ){
+		List<Node> neighbors =  new ArrayList<Node>();
+		State state = parent.state;
 		if(state.isGoal()){
 			//System.out.println("no neighbors");
 			return neighbors;
@@ -182,9 +148,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			Action action =  new Delivery(task);
 			actions.add(action);
 			logger.write(action);
-			Node newNode = new Node(newState);
 			
-			neighbors.add(new Neighbor(newNode,parent, actions, cost));
+			neighbors.add(new Node(newState,parent, actions, cost));
 		}
 			
 		//pickup
@@ -193,14 +158,13 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				State newState = state.pickTask(task);
 				List<Action> actions = new ArrayList<Action>();
 	
-				Node newNode = new Node(newState);
 				double cost = state.currentCity.distanceTo(task.pickupCity) + parentCost;
 				for (City city : state.currentCity.pathTo(task.pickupCity))
 						actions.add(new Move(city));			
 				Action action = new Pickup(task);
 				logger.write(action);
 				actions.add(action);
-				neighbors.add(new Neighbor(newNode, parent, actions, cost));
+				neighbors.add(new Node(newState, parent, actions, cost));
 			}
 			
 		}
@@ -266,46 +230,45 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		for(Task t: tasks){
 			toPick.add(t);
 		}
-		Node initNode = new Node(new State(current, toPick, carriedTasks));
-
-		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
-		Q.add(new Neighbor(initNode, null, new ArrayList<Action>(),0));
-		HashMap<State, Neighbor> C = new HashMap<State, Neighbor>();		
-		Neighbor best = null;
+		State initState = new State(current, toPick, carriedTasks); 
+		Node initNode = new Node(initState, null, new ArrayList<Action>(),0);
+		LinkedList<Node> Q = new LinkedList<Node>();
+		Q.add(initNode);
+		HashMap<State, Node> C = new HashMap<State, Node>();		
+		Node best = null;
 		double minCost = Double.MAX_VALUE;
 		int counter = 0;
 		while(Q.size() != 0){
 			logger.logCounter(counter);
 			System.out.println(counter);
 			counter++;
-			Neighbor neighbor = Q.pop();
-			Node node = neighbor.node;
-			double cost = neighbor.cost;
-			if(node.isGoal()){
+			Node node = Q.pop();
+			double cost = node.cost;
+			if(node.state.isGoal()){
 				//System.out.println("Goal reached");
-				best = neighbor;
+				best = node;
 				logger.write("Goal reached");
 				break;
 			}
 			//If we already visited the node we check if the cost is inferior
-			if(C.containsKey(neighbor.node.state) && C.get(neighbor.node.state).cost > cost){
-				C.replace(neighbor.node.state, neighbor);
+			if(C.containsKey(node.state) && C.get(node.state).cost > cost){
+				C.replace(node.state, node);
 			}
 
 			//System.out.println("Current City" + neighbor.node.state.currentCity);
 			if(!C.containsKey(node.state)){
 				logger.writeQueue(Q, node);
-				C.put(node.state, neighbor);//put in list of visited nodes
+				C.put(node.state, node);//put in list of visited nodes
 				logger.logNode(node);
 	
-				List<Neighbor> neighbors = computeNeighbors(neighbor,  cost);
+				List<Node> neighbors = computeNeighbors(node,  cost);
 				
-				for(Neighbor neigh: neighbors){
-					neigh.fcost = neighbor.cost + h(neigh, neighbor);
+				for(Node neigh: neighbors){
+					neigh.fcost = node.cost + h(neigh, node);
 					//neigh.fcost = neighbor.cost;
 				}
 
-				for(Neighbor n : neighbors){
+				for(Node n : neighbors){
 					Q.add(n);
 				}
 
@@ -317,7 +280,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 	
 		LinkedList<Action> bestActions = new LinkedList<Action>();
-		while(!best.node.equals(initNode)){
+		while(!best.equals(initNode)){
 			for (int i = best.parentActions.size() - 1; i >= 0; i--) {
 				bestActions.addFirst(best.parentActions.get(i));
 			}
@@ -355,9 +318,9 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			write((Object) str);
 		}
 
-		public void writeQueue(LinkedList<Neighbor> queue, Node node){
+		public void writeQueue(LinkedList<Node> queue, Node node){
 			StringBuilder b = new StringBuilder(String.format("Queue (current node %s): \n", node.state.currentCity));
-			for(Neighbor n: queue){
+			for(Node n: queue){
 				Action a = null;
 				/*for(Action aprime: n.plan){
 					a = aprime;
@@ -386,11 +349,11 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			System.out.println(str);
 		}
 	}
-	class NeighborComparator implements Comparator<Neighbor> 
+	class NeighborComparator implements Comparator<Node> 
 	{ 
 		// Used for sorting in ascending order of 
 		// roll number 
-		public int compare(Neighbor a, Neighbor b) 
+		public int compare(Node a, Node b) 
 		{ 
 			if (a.fcost < b.fcost)
   				return -1;
@@ -403,22 +366,22 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	}
 
 	
-	private double h(Neighbor n, Neighbor parent){
+	private double h(Node n, Node parent){
 		double avgX = 0;
 		double avgY = 0;
-		double size = parent.node.state.picked.size() + parent.node.state.toPick.size();
-		for(Task t: parent.node.state.picked){
+		double size = parent.state.picked.size() + parent.state.toPick.size();
+		for(Task t: parent.state.picked){
 			avgX += t.deliveryCity.xPos;
 			avgY += t.deliveryCity.yPos;
 		}
-		for(Task t: parent.node.state.toPick){
+		for(Task t: parent.state.toPick){
 			avgX += t.pickupCity.xPos;
 			avgY += t.pickupCity.yPos;
 		}
 		avgX /= size;
 		avgY /= size;
 
-		return Math.sqrt(Math.pow(n.node.state.currentCity.xPos - avgX, 2) + Math.pow(n.node.state.currentCity.yPos - avgY, 2));
+		return Math.sqrt(Math.pow(n.state.currentCity.xPos - avgX, 2) + Math.pow(n.state.currentCity.yPos - avgY, 2));
 	}
 	
 	/*
@@ -427,11 +390,11 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		return 0;
 	}*/
 
-	private void updateCosts(Collection<Neighbor> Q, Neighbor parent){
+	private void updateCosts(Collection<Node> Q, Node parent){
 		logger.write("inside");
-			for(Neighbor possibleChild: Q){
-				if(possibleChild.closestParent != null && possibleChild.closestParent.node.state.equals(parent.node.state)){
-					possibleChild.cost = parent.cost + possibleChild.node.state.currentCity.distanceTo(parent.node.state.currentCity);
+			for(Node possibleChild: Q){
+				if(possibleChild.closestParent != null && possibleChild.closestParent.state.equals(parent.state)){
+					possibleChild.cost = parent.cost + possibleChild.state.currentCity.distanceTo(parent.state.currentCity);
 					//updateCosts(C, n);
 				}
 			}
@@ -443,57 +406,57 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		for(Task t: tasks){
 			toPick.add(t);
 		}
-		Node initNode = new Node(new State(current, toPick, carriedTasks));
+		State initState = new State(current, toPick, carriedTasks);
 
-		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
-		Q.add(new Neighbor(initNode, null, new ArrayList<Action>(),0));
-		HashMap<State, Neighbor> C = new HashMap<State, Neighbor>();		
+		LinkedList<Node> Q = new LinkedList<Node>();
+		Node initNode = new Node(initState, null, new ArrayList<Action>(),0);
+		Q.add(initNode);
+		HashMap<State, Node> C = new HashMap<State, Node>();		
 		int counter = 0;
 
 		while(Q.size() != 0){
 			logger.logCounter(counter);
 			System.out.println(counter);
 			counter++;
-			Neighbor neighbor = Q.pop();
-			Node node = neighbor.node;
-			double cost = neighbor.cost;
-			if(node.isGoal()){
+			Node node = Q.pop();
+			double cost = node.cost;
+			if(node.state.isGoal()){
 				logger.write("Goal reached");
 			}
 			//If we already visited the node we check if the cost is inferior
-			if(C.containsKey(neighbor.node.state) && C.get(neighbor.node.state).cost > cost){
-				C.get(neighbor.node.state).cost = neighbor.cost;
-				C.get(neighbor.node.state).closestParent = neighbor.closestParent;
-				C.get(neighbor.node.state).parentActions = neighbor.parentActions;
-				updateCosts(Q, C.get(neighbor.node.state));
+			if(C.containsKey(node.state) && C.get(node.state).cost > cost){
+				C.get(node.state).cost = node.cost;
+				C.get(node.state).closestParent = node.closestParent;
+				C.get(node.state).parentActions = node.parentActions;
+				updateCosts(Q, C.get(node.state));
 			}
 
 			if(!C.containsKey(node.state)){
 				logger.writeQueue(Q, node);
 
-				C.put(node.state, neighbor);//put in list of visited nodes
+				C.put(node.state, node);//put in list of visited nodes
 				logger.logNode(node);
 	
-				List<Neighbor> neighbors = computeNeighbors(neighbor,  cost);
-				for(Neighbor n : neighbors){
+				List<Node> neighbors = computeNeighbors(node,  cost);
+				for(Node n : neighbors){
 					Q.add(n);
 				}
 			}
 		}
 
-		Neighbor best = null; 
+		Node best = null; 
 		double bestCost = Double.POSITIVE_INFINITY;
 
 		
-		for(Neighbor neighbor : C.values()){
-			if(neighbor.node.isGoal() && neighbor.cost < bestCost){
+		for(Node neighbor : C.values()){
+			if(neighbor.state.isGoal() && neighbor.cost < bestCost){
 				best = neighbor;
 				bestCost = neighbor.cost;
 			}
 		}
 		
 		LinkedList<Action> bestActions = new LinkedList<Action>();
-		while(!best.node.equals(initNode)){
+		while(!best.equals(initNode)){
 			for (int i = best.parentActions.size() - 1; i >= 0; i--) {
 				bestActions.addFirst(best.parentActions.get(i));
 			}
