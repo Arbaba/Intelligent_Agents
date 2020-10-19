@@ -174,7 +174,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		for(Task task: state.picked){
 			State newState = state.removePickedTask(task);
 			List<Action> actions = new ArrayList<Action>();
-			double cost =  state.currentCity.distanceTo(task.deliveryCity);
+			double cost =  state.currentCity.distanceTo(task.deliveryCity) + parentCost;
 			for (City city : state.currentCity.pathTo(task.deliveryCity))
 				actions.add(new Move(city));
 			
@@ -193,7 +193,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				List<Action> actions = new ArrayList<Action>();
 	
 				Node newNode = new Node(newState);
-				double cost = state.currentCity.distanceTo(task.pickupCity);
+				double cost = state.currentCity.distanceTo(task.pickupCity) + parentCost;
 				for (City city : state.currentCity.pathTo(task.pickupCity))
 						actions.add(new Move(city));			
 				Action action = new Pickup(task);
