@@ -343,7 +343,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			}
 		}
 		public  void logNode(Node n){
-			write(n.toString());
+			//write(n.toString());
 		}
 
 		public void write(String str){
@@ -360,7 +360,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				}*/
 				//b.append(String.format("   city: %s, cost: %f, lastAction: %s\n", n.node.state.currentCity, n.cost, a));
 			}
-			write(b.toString());
+			//write(b.toString());
 		}
 
 		public void write(Object o){
@@ -406,14 +406,15 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		avgX /= size;
 		avgY /= size;
 
-		return Math.sqrt(Math.pow(n.node.state.currentCity.xPos - avgX, 2) + Math.pow(n.node.state.currentCity.yPos - avgY, 2));
+		return 0;//Math.sqrt(Math.pow(n.node.state.currentCity.xPos - avgX, 2) + Math.pow(n.node.state.currentCity.yPos - avgY, 2));
 	}
 
-	private void updateCosts(Collection<Neighbor> C, Neighbor neighbor){
-			for(Neighbor n: C){
-				if(n.closestParent == neighbor){
-					n.cost = neighbor.cost + n.node.state.currentCity.distanceTo(neighbor.node.state.currentCity);
-					updateCosts(C, n);
+	private void updateCosts(Collection<Neighbor> Q, Neighbor parent){
+		logger.write("inside");
+			for(Neighbor possibleChild: Q){
+				if(possibleChild.closestParent != null && possibleChild.closestParent.node.state.equals(parent.node.state)){
+					possibleChild.cost = parent.cost + possibleChild.node.state.currentCity.distanceTo(parent.node.state.currentCity);
+					//updateCosts(C, n);
 				}
 			}
 	}
@@ -429,9 +430,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		LinkedList<Neighbor> Q = new LinkedList<Neighbor>();
 		Q.add(new Neighbor(initNode, null, new ArrayList<Action>(),0));
 		HashMap<State, Neighbor> C = new HashMap<State, Neighbor>();		
-		Neighbor bestNode = null;
-		double minCost = Double.MAX_VALUE;
 		int counter = 0;
+
 		while(Q.size() != 0){
 			logger.logCounter(counter);
 			counter++;
@@ -446,7 +446,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				C.get(neighbor.node.state).cost = neighbor.cost;
 				C.get(neighbor.node.state).closestParent = neighbor.closestParent;
 				C.get(neighbor.node.state).parentActions = neighbor.parentActions;
-				updateCosts(C.values(), C.get(neighbor.node.state));
+				updateCosts(Q, C.get(neighbor.node.state));
 			}
 
 			if(!C.containsKey(node.state)){
