@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 /* import table */
 import logist.simulation.Vehicle;
 import logist.agent.Agent;
@@ -147,7 +148,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			
 			Action action =  new Delivery(task);
 			actions.add(action);
-			logger.write(action);
+			//logger.write(action);
 			
 			neighbors.add(new Node(newState,parent, actions, cost));
 		}
@@ -162,7 +163,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				for (City city : state.currentCity.pathTo(task.pickupCity))
 						actions.add(new Move(city));			
 				Action action = new Pickup(task);
-				logger.write(action);
+				//logger.write(action);
 				actions.add(action);
 				neighbors.add(new Node(newState, parent, actions, cost));
 			}
@@ -205,20 +206,27 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 	@Override
 	public Plan plan(Vehicle vehicle, TaskSet tasks) {
 		Plan plan;
+		long startTime = 0;
+		long endTime = 0;
 		System.out.println(algorithm);
 		// Compute the plan with the selected algorithm.
 		switch (algorithm) {
 		case ASTAR:
-			// ...
+			startTime = System.nanoTime();
 			plan = aStarPlan(vehicle, tasks);
+			endTime = System.nanoTime();
 			break;
 		case BFS:
-			// ...
+			startTime = System.nanoTime();
 			plan = bfsPlan(vehicle, tasks);
+			endTime = System.nanoTime();
 			break;
 		default:
 			throw new AssertionError("Should not happen.");
-		}		
+		}
+		long durationInNano = (endTime - startTime);	
+		long durationInMillis = TimeUnit.NANOSECONDS.toMillis(durationInNano);
+		System.out.println("Time to compute time: " + durationInMillis + " ms");
 		return plan;
 	}
 
@@ -239,34 +247,39 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		double minCost = Double.MAX_VALUE;
 		int counter = 0;
 		while(Q.size() != 0){
-			logger.logCounter(counter);
+			//logger.logCounter(counter);
 			System.out.println(counter);
 			counter++;
 			Node node = Q.pop();
+			double fcost = node.fcost;
 			double cost = node.cost;
 			if(node.state.isGoal()){
 				//System.out.println("Goal reached");
 				best = node;
-				logger.write("Goal reached");
+				//logger.write("Goal reached");
 				break;
 			}
 			//If we already visited the node we check if the cost is inferior
 			if(C.containsKey(node.state) && C.get(node.state).cost > cost){
-				C.replace(node.state, node);
+				double difference = C.get(node.state).cost-cost;
+				C.get(node.state).cost = node.cost;
+				C.get(node.state).closestParent = node.closestParent;
+				C.get(node.state).parentActions = node.parentActions;
+				updateCostsASTAR(C, C.get(node.state), difference);
 			}
 
 			//System.out.println("Current City" + neighbor.node.state.currentCity);
 			if(!C.containsKey(node.state)){
-				logger.writeQueue(Q, node);
+				//logger.writeQueue(Q, node);
 				C.put(node.state, node);//put in list of visited nodes
-				logger.logNode(node);
+				//logger.logNode(node);
 	
 				List<Node> neighbors = computeNeighbors(node,  cost);
 				
 				for(Node neigh: neighbors){
-					//neigh.fcost = node.cost + hMaxDistance(neigh);
+					neigh.fcost = node.cost + hMaxDistance(neigh);
 					//neigh.fcost = node.cost + hAvg(neigh, node);
-					neigh.fcost = node.cost + hNearest(neigh);
+					//neigh.fcost = node.cost + hNearest(neigh);
 
 					//neigh.fcost = neighbor.cost;
 				}
@@ -392,9 +405,11 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		double dist;
 
 		for(Task t : n.state.toPick){
-			dist = n.state.currentCity.distanceTo(t.pickupCity);
-			if(dist > maxDist){
-				maxDist = dist;
+			if(n.state.canPickup(t)){
+				dist = n.state.currentCity.distanceTo(t.pickupCity);
+				if(dist > maxDist){
+					maxDist = dist;
+				}
 			}
 		}
 
@@ -458,6 +473,17 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				}
 			}
 	}
+
+	private void updateCostsASTAR(HashMap<State, Node> C, Node parent, double difference){
+		logger.write("inside");
+			for(Node possibleChild : C.values()){
+				if(possibleChild.closestParent != null && possibleChild.closestParent.state.equals(parent.state)){
+					possibleChild.fcost -= difference;
+					updateCostsASTAR(C, possibleChild, difference);
+				}
+			}
+	}
+
 	private Plan bfsPlan(Vehicle vehicle, TaskSet tasks){
 		City current = vehicle.getCurrentCity();
 		Plan plan = new Plan(current);
@@ -474,13 +500,13 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		int counter = 0;
 
 		while(Q.size() != 0){
-			logger.logCounter(counter);
-			System.out.println(counter);
+			//logger.logCounter(counter);
+			//System.out.println(counter);
 			counter++;
 			Node node = Q.pop();
 			double cost = node.cost;
 			if(node.state.isGoal()){
-				logger.write("Goal reached");
+				//logger.write("Goal reached");
 			}
 			//If we already visited the node we check if the cost is inferior
 			if(C.containsKey(node.state) && C.get(node.state).cost > cost){
@@ -491,10 +517,10 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			}
 
 			if(!C.containsKey(node.state)){
-				logger.writeQueue(Q, node);
+				//logger.writeQueue(Q, node);
 
 				C.put(node.state, node);//put in list of visited nodes
-				logger.logNode(node);
+				////logger.logNode(node);
 	
 				List<Node> neighbors = computeNeighbors(node,  cost);
 				for(Node n : neighbors){
