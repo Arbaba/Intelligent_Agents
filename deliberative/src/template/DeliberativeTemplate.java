@@ -232,20 +232,19 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 	private LinkedList<Node> mergeSortedCollections(LinkedList<Node> xList, LinkedList<Node> yList){
 		LinkedList<Node> acc = new LinkedList<Node>();
-		LinkedList<Node> xCopy = new LinkedList<Node>(xList);
-		LinkedList<Node> yCopy = new LinkedList<Node>(yList);
 
-		while(acc.size() < xList.size() + yList.size()){
-			if(xCopy.size() > 0 && yCopy.size() > 0){
-			  if(xCopy.element().fcost <= yCopy.element().fcost){
-				acc.add(xCopy.pop());
+		int finalSize = xList.size() + yList.size();
+		while(acc.size() <  finalSize){
+			if(xList.size() > 0 && yList.size() > 0){
+			  if(xList.element().fcost <= yList.element().fcost){
+				acc.add(xList.pop());
 			  }else{
-				acc.add(yCopy.pop());
+				acc.add(yList.pop());
 			  }
-			}else if(xCopy.size() > 0){
-			  acc.add(xCopy.pop());
-			}else if(yCopy.size() > 0){
-			  acc.add(yCopy.pop());
+			}else if(xList.size() > 0){
+			  acc.add(xList.pop());
+			}else if(yList.size() > 0){
+			  acc.add(yList.pop());
 			}
 		}
 		return acc;
@@ -267,7 +266,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		int counter = 0;
 		while(Q.size() != 0){
 			//logger.logCounter(counter);
-			System.out.println(counter);
+			//System.out.println(counter);
 			counter++;
 			Node node = Q.pop();
 			double fcost = node.fcost;
@@ -302,13 +301,20 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 					//neigh.fcost = neighbor.cost;
 				}
-				/*
-				for(Node n : neighbors){
-					Q.add(n);
-				}*/
-				Collections.sort(neighbors, new NeighborComparator());
-				Q = mergeSortedCollections(Q, new LinkedList<Node>(neighbors));
-				//Collections.sort(Q, new NeighborComparator());
+
+				
+				if(false){
+					for(Node n : neighbors){
+						Q.add(n);
+					}
+					Collections.sort(Q, new NeighborComparator());
+
+				}else {
+					//Merge two sorted Lists
+					Collections.sort(neighbors, new NeighborComparator());
+					Q = mergeSortedCollections(Q, new LinkedList<Node>(neighbors));
+				}
+				
 			}
 		}
 
