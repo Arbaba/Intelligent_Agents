@@ -264,11 +264,11 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				List<Node> neighbors = computeNeighbors(node,  cost);
 				
 				for(Node neigh: neighbors){
-					//neigh.fcost = node.cost + hMaxDistance(neigh);
+					neigh.fcost = node.cost + hMaxDistance(neigh);
 					//neigh.fcost = node.cost + hAvg(neigh, node);
-					neigh.fcost = node.cost + hNearest(neigh);
+					//neigh.fcost = node.cost + hNearest(neigh);
 
-					//neigh.fcost = neighbor.cost;
+					//neigh.fcost = node.cost;
 				}
 
 				for(Node n : neighbors){
@@ -414,7 +414,8 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		double cost = 0.0;
 		HashSet<Task> toPick = new HashSet<Task>(n.state.toPick);
 		HashSet<Task> picked = new HashSet<Task>(n.state.picked);
-		while(toPick.size() + picked.size() > 0){
+		double i = 0;
+		while( toPick.size() + picked.size() >   0){
 			double costToPick = Double.POSITIVE_INFINITY;
 			double costPicked = Double.POSITIVE_INFINITY;
 			for(Task t: picked){
@@ -434,14 +435,19 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 			if(costToPick < costPicked){
 				toPick.remove(toRemoveToPick);
-				cost += costToPick;
+				cost += costToPick ;
 			}else {
 				picked.remove(toRemovePicked);
-				cost += costPicked;
+				cost += costPicked ;
 			}
+			i--;
 		}
-		
-		return cost;
+		if(n.cost > 0){
+
+			return cost ;
+		}else {
+			return cost;
+		}
 	}
 	/*
 	private double h(Neighbor n){
