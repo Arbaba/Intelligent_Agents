@@ -244,7 +244,6 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		Q.add(initNode);
 		HashMap<State, Node> C = new HashMap<State, Node>();		
 		Node best = null;
-		double minCost = Double.MAX_VALUE;
 		int counter = 0;
 		while(Q.size() != 0){
 			//logger.logCounter(counter);
@@ -277,7 +276,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 				List<Node> neighbors = computeNeighbors(node,  cost);
 				
 				for(Node neigh: neighbors){
-					neigh.fcost = node.cost + hMaxDistance(neigh);
+					neigh.fcost = neigh.cost + hMaxDistance(neigh);
 					//neigh.fcost = node.cost + hAvg(neigh, node);
 					//neigh.fcost = node.cost + hNearest(neigh);
 
