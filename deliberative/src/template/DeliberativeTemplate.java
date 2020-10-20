@@ -230,6 +230,26 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 		return plan;
 	}
 
+	private LinkedList<Node> mergeSortedCollections(LinkedList<Node> xList, LinkedList<Node> yList){
+		LinkedList<Node> acc = new LinkedList<Node>();
+		LinkedList<Node> xCopy = new LinkedList<Node>(xList);
+		LinkedList<Node> yCopy = new LinkedList<Node>(yList);
+
+		while(acc.size() < xList.size() + yList.size()){
+			if(xCopy.size() > 0 && yCopy.size() > 0){
+			  if(xCopy.element().fcost <= yCopy.element().fcost){
+				acc.add(xCopy.pop());
+			  }else{
+				acc.add(yCopy.pop());
+			  }
+			}else if(xCopy.size() > 0){
+			  acc.add(xCopy.pop());
+			}else if(yCopy.size() > 0){
+			  acc.add(yCopy.pop());
+			}
+		}
+		return acc;
+	}
 	private Plan aStarPlan(Vehicle vehicle, TaskSet tasks){
 		System.out.println("Build ASTAR plan");
 		City current = vehicle.getCurrentCity();
@@ -282,12 +302,13 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 
 					//neigh.fcost = neighbor.cost;
 				}
-
+				/*
 				for(Node n : neighbors){
 					Q.add(n);
-				}
-
-				Collections.sort(Q, new NeighborComparator());
+				}*/
+				Collections.sort(neighbors, new NeighborComparator());
+				Q = mergeSortedCollections(Q, new LinkedList<Node>(neighbors));
+				//Collections.sort(Q, new NeighborComparator());
 			}
 		}
 
@@ -354,7 +375,7 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			try {
 				
 				writer.write(str + "\n");
-					writer.flush();
+					//writer.flush();
 				
 			} catch (Exception e) {
 				//TODO: handle exception
@@ -478,7 +499,6 @@ public class DeliberativeTemplate implements DeliberativeBehavior {
 			for(Node possibleChild : C.values()){
 				if(possibleChild.closestParent != null && possibleChild.closestParent.state.equals(parent.state)){
 					possibleChild.fcost -= difference;
-					updateCostsASTAR(C, possibleChild, difference);
 				}
 			}
 	}
