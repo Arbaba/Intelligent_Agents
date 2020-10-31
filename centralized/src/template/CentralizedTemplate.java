@@ -19,7 +19,7 @@ import logist.task.TaskSet;
 import logist.topology.Topology;
 import logist.topology.Topology.City;
 
-/**
+/*
  * A very simple auction agent that assigns all tasks to its first vehicle and
  * handles them sequentially.
  *
@@ -55,11 +55,20 @@ public class CentralizedTemplate implements CentralizedBehavior {
         this.distribution = distribution;
         this.agent = agent;
     }
+    
+    public State initialState(){
+        return null;
 
+    }
+
+    
     @Override
     public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
+
         long time_start = System.currentTimeMillis();
+        NextActionManager manager;
         
+        Action a;
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
         Plan planVehicle1 = naivePlan(vehicles.get(0), tasks);
 
