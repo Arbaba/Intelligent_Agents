@@ -1,7 +1,9 @@
 package template;
 
+import java.io.File;
 //the list of imports
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import logist.LogistSettings;
@@ -13,6 +15,9 @@ import logist.agent.Agent;
 import logist.config.Parsers;
 import logist.simulation.Vehicle;
 import logist.plan.Plan;
+import logist.plan.Action.Delivery;
+import logist.plan.Action.Pickup;
+
 import logist.task.Task;
 import logist.task.TaskDistribution;
 import logist.task.TaskSet;
@@ -56,11 +61,45 @@ public class CentralizedTemplate implements CentralizedBehavior {
         this.agent = agent;
     }
     
-    public State initialState(){
-        return null;
+    public State initialState(List<Vehicle> vehicles, TaskSet tasks){
+            NextActionManager manager = new NextActionManager(vehicles);
+            HashMap<TAction, Vehicle> v  = new HashMap<TAction, Vehicle>();
+            boolean first = true;
+            TAction prev = null;
+            for(Task t: tasks){
+                TAction pickup = new TAction(new Pickup(t), t);
+                TAction delivery = new TAction(new Delivery(t), t);
 
+                if(first){
+                    manager.setFirstAction(vehicles.get(0), pickup);
+                    prev = pickup;
+                    first = false;
+                }else{
+                    manager.setNextAction(prev, pickup);
+                    manager.setNextAction(pickup, delivery);
+                    prev = delivery;
+                }
+            }
+            
+            manager.setNextAction(prev, null);
+
+            return new State(manager, vehicles);
     }
 
+    public State SLS(State s){
+        State state = new State(s);
+        int counter = 0;
+        
+        while(counter < 10 ){
+            System.out.println("Iteration " + counter);
+            state = state.chooseNeighbors();
+            counter++;;
+
+        }
+        
+        return state;
+    }
+    
     
     @Override
     public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
@@ -68,14 +107,12 @@ public class CentralizedTemplate implements CentralizedBehavior {
         long time_start = System.currentTimeMillis();
         NextActionManager manager;
         
-        Action a;
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
-        Plan planVehicle1 = naivePlan(vehicles.get(0), tasks);
-
+        State state = SLS(initialState(vehicles, tasks));
         List<Plan> plans = new ArrayList<Plan>();
-        plans.add(planVehicle1);
-        while (plans.size() < vehicles.size()) {
-            plans.add(Plan.EMPTY);
+
+        for(Vehicle v: vehicles){
+            plans.add(state.toPlan(v));
         }
         
         long time_end = System.currentTimeMillis();

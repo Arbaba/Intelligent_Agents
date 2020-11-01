@@ -2,51 +2,52 @@ package template;
 
 import logist.task.Task;
 import java.util.HashMap;
+import java.util.List;
+
 import logist.simulation.Vehicle;
-import logist.plan.Action.Deliver;
+import logist.plan.Action.Delivery;
 import logist.plan.Action.Pickup;
 
 public class NextActionManager {
-    private HashMap<Action, Action> nextAction;
-	private HashMap<Vehicle, Action>  firstAction;
-
-    public NextActionManager(HashMap<Action, Action> nextAction, HashMap<Vehicle, Action>  firstAction ){
-        this.nextAction = new HashMap<Action, Action>(nextAction);
-        this.firstAction = new HashMap<Vehicle, Action>(firstAction);
-	}
-	
-	public NextActionManager(NextActionManager other){
-        this.nextAction = new HashMap<Action, Action>(other.nextAction);
-        this.firstAction = new HashMap<Vehicle, Action>(other.firstAction);
+    private HashMap<TAction, TAction> nextAction;
+    private HashMap<Vehicle, TAction>  firstAction;
+    
+    public NextActionManager(List<Vehicle> vehicles){
+        this.nextAction = new HashMap<TAction, TAction>();
+        this.firstAction = new HashMap<Vehicle, TAction>();
+        for(Vehicle v: vehicles){
+            firstAction.put(v, null);
+        }
     }
 
-	public Action firstAction(Vehicle vk){
+	public NextActionManager(NextActionManager other){
+        this.nextAction = new HashMap<TAction,TAction>(other.nextAction);
+        this.firstAction = new HashMap<Vehicle, TAction>(other.firstAction);
+    }
+
+	public TAction firstPick(Vehicle vk){
 		return firstAction.get(vk);
 	}
 	
-	public Action nextAction(Action a){
+	public TAction nextAction(TAction a){
         //return null if last vehicle action
         return nextAction.get(a);
 	}
 
-	public void setFirstAction(Vehicle v, Action a){
+	public void setFirstAction(Vehicle v, TAction a){
 		if(a.isDelivery()) {throw new IllegalArgumentException("First action can not be a delivery");}
 		firstAction.put(v, a);
 	}
 
-	public void setNextAction(Action a1, Action a2) {
+	public void setNextAction(TAction a1, TAction a2) {
 		nextAction.put(a1, a2);
 	}
 
-	public void removeTask(Task a){
-		Action pick = new Action(new Pickup(a), a);
-		Action deliver = new Action(new Deliver(a), a);
+	public void removeTask(Task t){
+		TAction pick = new TAction(new Pickup(t), t);
+		TAction deliver = new TAction(new Delivery(t), t);
         
 		nextAction.remove(pick);
 		nextAction.remove(deliver);
-	}
-
-	public void addTask(Task t, int i1, int i2){
-
 	}
 }
