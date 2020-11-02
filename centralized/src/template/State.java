@@ -200,7 +200,9 @@ class State {
         //[....,a2,a1,....]
 
         //Update a1 previous action null->a2
-        newManager.setNextAction(previousTask(a1), a2);
+        if(time.get(a1) > 0){
+            newManager.setNextAction(previousTask(a1), a2);
+        }
         //Update a2 previous action a1->a1
         if(!previousTask(a2).equals(a1)){
             newManager.setNextAction(previousTask(a2), a1);

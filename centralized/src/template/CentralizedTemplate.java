@@ -179,7 +179,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
         NextActionManager manager;
         
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
-        State state = SLS(initialState(vehicles, tasks));
+        State state = SLS(initialStateEven(vehicles, tasks));
         List<Plan> plans = new ArrayList<Plan>();
 
         for(Vehicle v: vehicles){
