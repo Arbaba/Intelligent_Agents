@@ -129,24 +129,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
                     prev = delivery;
 
                 }
-            }/*
-            for(Task t: tasks){
-                TAction pickup = new TAction(new Pickup(t), t);
-                TAction delivery = new TAction(new Delivery(t), t);
-
-                if(first){
-                    manager.setFirstAction(vehicles.get(0), pickup);
-                    prev = pickup;
-                    first = false;
-                    manager.setNextAction(pickup, delivery);
-
-                }else{
-                    manager.setNextAction(prev, pickup);
-                    manager.setNextAction(pickup, delivery);
-                    prev = delivery;
-                }
             }
-            */
             manager.setNextAction(prev, null);
 
             return new State(manager, vehicles);
@@ -154,20 +137,27 @@ public class CentralizedTemplate implements CentralizedBehavior {
 
     public State SLS(State s){
         State bestState = new State(s);
-        State state = bestState.chooseNeighbors();
-        int counter = 0;
-        Random rng = new Random(5);
-        while(counter < 100 ){
-            System.out.println("Iteration " + counter);
-            if(state.cost < bestState.cost && (rng.nextFloat()) < 0.5){
-                bestState = state;
+        try {
+            State state = bestState.chooseNeighbors();
+            int counter = 0;
+            Random rng = new Random(5);
+            
+            while(counter < 100 ){
+                System.out.println("Iteration " + counter);
+                if(state.cost < bestState.cost && (rng.nextFloat()) < 0.5){
+                    bestState = state;
+                }
+                state = bestState.chooseNeighbors();
+                counter++;
+                System.out.println(bestState.cost);
             }
-            state = bestState.chooseNeighbors();
-            counter++;
-            System.out.println(bestState.cost);
+            bestState.printPlans();
+        } catch (Exception e) {
+            //TODO: handle exception
+            System.out.println("An exception occured but we return the best solution found.\n" + e.toString());
+
         }
-        bestState.printPlans();
-        //System.out.println(bestState.cost);
+   
         return bestState;
     }
     

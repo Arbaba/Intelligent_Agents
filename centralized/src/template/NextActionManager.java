@@ -35,7 +35,7 @@ public class NextActionManager {
 	}
 
 	public void setFirstAction(Vehicle v, TAction a){
-        if(a != null && a.isDelivery()) {throw new IllegalArgumentException("First action can not be a delivery");}
+        //if(a != null && a.isDelivery()) {throw new IllegalArgumentException("First action can not be a delivery");}
 		firstAction.put(v, a);
 	}
 

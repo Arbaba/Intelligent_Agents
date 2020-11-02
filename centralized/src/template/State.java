@@ -57,11 +57,7 @@ class State {
     
         //Initialize the cost
         computeCost();
-        //System.out.println("Build 0 number of keys" + capacityLeft.keySet().size());
-        //System.out.println("Build 0 number of keys" + vehicles.size());
-        //System.out.println("Build 0 number of keys" + time.keySet().size());
-
-        checkValidity();
+        //checkValidity();
     }
 	
 	public State(State other){
@@ -72,7 +68,7 @@ class State {
         this.cost = other.cost;
         this.oppositeAction = new HashMap<TAction, TAction>(other.oppositeAction);
         this.orderedVehicles = new ArrayList<Vehicle>(other.orderedVehicles);
-        checkValidity();
+        //checkValidity();
 	}
 
     public boolean checkValidity(){
@@ -138,7 +134,7 @@ class State {
         return newState;
 	}
 	
-    public boolean updateCapacity(Vehicle v){
+    public void updateCapacity(Vehicle v){
 		int currentCapacity = v.capacity();
         TAction action = manager.firstPick(v);
 		List<Integer> capacities = new ArrayList<Integer>();
@@ -153,7 +149,6 @@ class State {
             action = manager.nextAction(action);
 		}
         capacityLeft.put(v, capacities);
-        return true;
 	}
 	
     public void updateTime(Vehicle v, TAction action){
@@ -183,7 +178,6 @@ class State {
     }
 
     //Change the order of two tasks in the task list of a vehicle
-    //Change the order of two tasks in the task list of a vehicle
     public State changeTaskOrder(Vehicle v, TAction a1, TAction a2){
         //System.out.println("to ");
 
@@ -195,9 +189,6 @@ class State {
         }else if(newState.time.get(a2) == 0){
             newManager.setFirstAction(v, a1);
         }
-
-        //[a1, a2, .........]
-        //[....,a2,a1,....]
 
         //Update a1 previous action null->a2
         if(time.get(a1) > 0){
@@ -216,12 +207,6 @@ class State {
             newManager.setNextAction(a1, manager.nextAction(a2));
         }
         
-
-        //Update a1 next action
-        //newManager.setNextAction(a2, manager.nextAction(a1));
-        //Update a2 next action
-        //newManager.setNextAction(a1, manager.nextAction(a2));
-
         //Update capacity
         newState.updateCapacity(v);
 
@@ -273,16 +258,13 @@ class State {
         for(int i = 1; i < candidates.size(); i++){
             if(best.cost > candidates.get(i).cost){
                 best = candidates.get(i);
-                //System.out.println("candidates cost: " + candidates.get(i).cost);
             }
         }
-        //System.out.println("cost: " + best.cost);
         return best;
     }
     public boolean allCapacitiesPositive(){
         for(Vehicle v: orderedVehicles){
             for(Integer capleft: capacityLeft.get(v)){
-                //System.out.println("capacity " +capleft);
                 if(capleft < 0){
                     return false;
                 }
@@ -308,8 +290,7 @@ class State {
         }
 
         for(Vehicle otherVehicle: orderedVehicles){
-            if(!v.equals(otherVehicle) /*&& a.task.weight <= otherVehichle.capacity()*/){
-                //System.out.println("change");
+            if(!v.equals(otherVehicle)){
                 State newState = new State(this);
                 
                 if(otherVehicle.capacity() >= manager.firstPick(v).task.weight){
@@ -319,10 +300,6 @@ class State {
                         candidates.add(newState);
                     }
                 }
-  
-                //System.out.println(newState.cost);
-                //System.out.print("Cost candidate changeVehicle: " + newState.cost);
-                
             }
         }
         
@@ -334,9 +311,7 @@ class State {
             TAction rightTask = manager.nextAction(leftTask);
 
             for(int t1 = 0; t1 < length - 1; t1++){
-                //System.out.println("t1: " + t1 + leftTask);
                 for(int t2 = t1 + 1; t2 < length; t2++){
-                    //System.out.println("t2: " + t2 + rightTask);
 					//if we are not swapping the same task and we don't have weight problems
                     if(isInOrder(leftTask, t2) && isInOrder(rightTask, t1)){
                         State newState = new State(this);
