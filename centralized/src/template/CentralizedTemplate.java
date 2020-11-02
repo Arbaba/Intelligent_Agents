@@ -3,6 +3,7 @@ package template;
 import java.io.File;
 //the list of imports
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -65,7 +66,32 @@ public class CentralizedTemplate implements CentralizedBehavior {
             NextActionManager manager = new NextActionManager(vehicles);
             HashMap<TAction, Vehicle> v  = new HashMap<TAction, Vehicle>();
             boolean first = true;
-            TAction prev = null;
+            List<Task> list = new ArrayList<Task>();
+            for(Task t: tasks){
+                list.add(t);
+            }
+            TAction prev =  new TAction(new Pickup(list.get(0)), list.get(0));
+            for(int i = 0; i< tasks.size(); i++){
+                Task current = list.get(i);
+
+                if(i==0){
+                    TAction pickup = new TAction(new Pickup(list.get(0)), list.get(0));
+                    TAction delivery = new TAction(new Delivery(list.get(0)), list.get(0));
+    
+
+                    manager.setFirstAction(vehicles.get(0), pickup);
+                    manager.setNextAction(pickup, delivery);
+                    prev = delivery;
+                }else {
+                    TAction pickup = new TAction(new Pickup(current), current);
+                    TAction delivery = new TAction(new Delivery(current), current);
+    
+                    manager.setNextAction(prev, pickup);
+                    manager.setNextAction(pickup, delivery);
+                    prev = delivery;
+
+                }
+            }/*
             for(Task t: tasks){
                 TAction pickup = new TAction(new Pickup(t), t);
                 TAction delivery = new TAction(new Delivery(t), t);
@@ -74,13 +100,15 @@ public class CentralizedTemplate implements CentralizedBehavior {
                     manager.setFirstAction(vehicles.get(0), pickup);
                     prev = pickup;
                     first = false;
+                    manager.setNextAction(pickup, delivery);
+
                 }else{
                     manager.setNextAction(prev, pickup);
                     manager.setNextAction(pickup, delivery);
                     prev = delivery;
                 }
             }
-            
+            */
             manager.setNextAction(prev, null);
 
             return new State(manager, vehicles);
