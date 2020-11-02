@@ -113,12 +113,12 @@ public class CentralizedTemplate implements CentralizedBehavior {
 
             return new State(manager, vehicles);
     }
-
+/*
     public State SLS(State s){
         State state = new State(s);
         int counter = 0;
         
-        while(counter < 10 ){
+        while(counter < 1000 ){
             System.out.println("Iteration " + counter);
             state = state.chooseNeighbors();
             counter++;;
@@ -126,6 +126,27 @@ public class CentralizedTemplate implements CentralizedBehavior {
         }
         
         return state;
+    }*/
+    
+    public State SLS(State s){
+        State bestState = new State(s);
+        State state = bestState.chooseNeighbors();
+        int counter = 0;
+        
+        while(counter < 100 ){
+            System.out.println("cost: " + bestState.cost);
+
+            System.out.println("Iteration " + counter);
+            if(state.cost < bestState.cost){
+                bestState = state;
+            }
+           // bestState.printPlans();
+            state = bestState.chooseNeighbors();
+           // System.out.print("state cost: " + state.cost);
+            counter++;;
+        }
+        
+        return bestState;
     }
     
     

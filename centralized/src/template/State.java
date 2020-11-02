@@ -130,8 +130,9 @@ class State {
 
     //Take the first task from the tasks of one vehicle and give it to another vehicle
     public State changeVehicle(Vehicle v1, Vehicle v2){
+        System.out.println("Change vehicles");
 		State newState = new State(this);
-
+        System.out.println(v1.name() + v2.name());
 		//Get v1 first task (pick up)
         TAction aPickUp  = newState.manager.firstPick(v1);
         //Get v1 first task (delivery)
@@ -169,6 +170,7 @@ class State {
         //Compute the cost 
         newState.computeCost();
         checkValidity();
+        System.out.println("Change vehicules done");
         
         return newState;
 	}
@@ -177,8 +179,14 @@ class State {
 		int currentCapacity = v.capacity();
         TAction action = manager.firstPick(v);
 		List<Integer> capacities = new ArrayList<Integer>();
-		
+		int counter = 0;
 		while(action != null){
+            counter++;
+            //System.out.println(action.isPickUp() + action.task.toString());
+            if(counter > 1000){
+                
+                throw new RuntimeException("berk");
+            }
             if(action.isPickUp()){
                 currentCapacity += action.task.weight;
             }else if(action.isDelivery()){
@@ -208,23 +216,21 @@ class State {
     }
 
     public TAction previousTask(TAction a){
-        TAction next =  manager.firstPick(vehicles.get(a));
-        TAction current = null;
-        
-        while(current != null){
-            if(next == null || next.equals(a)){
-                break;
-            }else{
-                current = next;
-                next = manager.nextAction(a);
-            }
+        TAction next = manager.firstPick(vehicles.get(a));
+        TAction previous = null;
+
+        while(next != null && ! next.equals(a)){
+            previous = next;
+            next = manager.nextAction(next);      
         }
-        return current;
+       // if(a.equals(manager.nextAction(previous))) throw new RuntimeException("boo");
+        return previous;
     }
 
     //Change the order of two tasks in the task list of a vehicle
     public State changeTaskOrder(Vehicle v, TAction a1, TAction a2){
-    	
+        System.out.println("to ");
+
         State newState = new State(this);
         NextActionManager newManager = newState.manager;
         
@@ -234,15 +240,29 @@ class State {
             newManager.setFirstAction(v, a1);
         }
 
-        //Update a1 previous action
+        //[a1, a2, .........]
+        //[....,a2,a1,....]
+
+        //Update a1 previous action null->a2
         newManager.setNextAction(previousTask(a1), a2);
-        //Update a2 previous action
-        newManager.setNextAction(previousTask(a2), a1);
+        //Update a2 previous action a1->a1
+        if(!previousTask(a2).equals(a1)){
+            newManager.setNextAction(previousTask(a2), a1);
+
+            //Update a1 next action
+            newManager.setNextAction(a2, manager.nextAction(a1));
+            //Update a2 next action
+            newManager.setNextAction(a1, manager.nextAction(a2));
+        }else{
+            newManager.setNextAction(a2, a1);  
+            newManager.setNextAction(a1, manager.nextAction(a2));
+        }
+        
 
         //Update a1 next action
-        newManager.setNextAction(a2, manager.nextAction(a1));
+        //newManager.setNextAction(a2, manager.nextAction(a1));
         //Update a2 next action
-        newManager.setNextAction(a1, manager.nextAction(a2));
+        //newManager.setNextAction(a1, manager.nextAction(a2));
 
         //Update capacity
         newState.updateCapacity(v);
@@ -250,7 +270,7 @@ class State {
         //Update time
         newState.updateTime(v, newManager.firstPick(v));
         checkValidity();
-        
+        System.out.println("to done");
         return newState;    
     }
 
@@ -301,8 +321,8 @@ class State {
 
     public void computeCost(){
         TAction a;
-        
-        for(Vehicle v : vehicles.values()){
+        cost = 0;
+        for(Vehicle v : orderedVehicles){
             a = manager.firstPick(v);
             City currentCity = v.homeCity();
             while(a != null){
@@ -316,7 +336,6 @@ class State {
                 a = manager.nextAction(a);
             }
         }
-
     }
     
     public State localChoice(List<State> candidates){
@@ -348,9 +367,10 @@ class State {
                 candidates.add(changeVehicle(v, otherVehicle));
             }
         }
-        
+        System.out.println(v.name());
         //fill with changetaskorder
         //System.out.println("number of keys" + capacityLeft.keySet().size());
+        
         int length = capacityLeft.get(v).size();
         if(length >=2){
             TAction leftTask = manager.firstPick(v);
@@ -363,9 +383,10 @@ class State {
 					//if we are not swapping the same task and we don't have weight problems
                     if(isInOrder(leftTask, t2) && isInOrder(rightTask, t1) && isSwapValid(leftTask, rightTask)){
                         State newState = new State(this);
-                        newState.changeTaskOrder(v, leftTask, rightTask);
+                        newState = newState.changeTaskOrder(v, leftTask, rightTask);
                         newState.computeCost();
-                        //candidates.add(newState);
+                    //    System.out.print("Cost candidate changeTask: " + newState.cost);
+                        candidates.add(newState);
                     }
                     rightTask = manager.nextAction(rightTask);
                 }
@@ -373,6 +394,7 @@ class State {
                 rightTask = manager.nextAction(leftTask);
             }
         }
+        System.out.println("choose end");
         return localChoice(candidates);
     }
 
@@ -395,5 +417,23 @@ class State {
             action = manager.nextAction(action);
 		}
         return new Plan(v.homeCity(), actions);
+    }
+
+    public void printPlans(){
+        for(Vehicle v: orderedVehicles){
+            System.out.println("==== " + v.name() + " ===");
+            TAction action = manager.firstPick(v);
+            City currentCity = v.homeCity();
+            while(action != null){
+                if(action.isPickUp()){
+                    System.out.println((new Pickup(action.task)));
+                    currentCity = action.task.pickupCity;
+                }else if(action.isDelivery()){
+                    System.out.println(new Delivery(action.task));
+                    currentCity = action.task.deliveryCity;
+                }
+                action = manager.nextAction(action);
+		}
+        }
     }
 }
