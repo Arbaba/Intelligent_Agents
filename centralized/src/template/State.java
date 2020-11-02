@@ -370,11 +370,13 @@ class State {
         //System.out.println(orderedVehicles.size());
         //fill with changevehicles
         TAction a = manager.firstPick(v);
+        System.out.println(this.cost);
         while(a == null){
             v = orderedVehicles.get(new Random().nextInt(orderedVehicles.size()));
             a = manager.firstPick(v);
             //System.out.println("asss");
         }
+
         for(Vehicle otherVehicle: orderedVehicles){
             if(!v.equals(otherVehicle) /*&& a.task.weight <= otherVehichle.capacity()*/){
                 //System.out.println("change");
@@ -383,8 +385,8 @@ class State {
                 if(otherVehicle.capacity() >= manager.firstPick(v).task.weight){
                     newState = changeVehicle(v, otherVehicle);
                     if(newState.allCapacitiesPositive()){
+                        System.out.println("Candidate cost: " + newState.cost);
                         candidates.add(newState);
-
                     }
                 }
   
@@ -395,7 +397,7 @@ class State {
         }
         
         //fill with changetaskorder
-
+        
         int length = capacityLeft.get(v).size();
         if(length >=2){
             TAction leftTask = manager.firstPick(v);
@@ -406,7 +408,7 @@ class State {
                 for(int t2 = t1 + 1; t2 < length; t2++){
                     //System.out.println("t2: " + t2 + rightTask);
 					//if we are not swapping the same task and we don't have weight problems
-                    if(isInOrder(leftTask, t2) && isInOrder(rightTask, t1)/* && isSwapValid(leftTask, rightTask)*/){
+                    if(isInOrder(leftTask, t2) && isInOrder(rightTask, t1)){
                         State newState = new State(this);
                         newState = newState.changeTaskOrder(v, leftTask, rightTask);
                         newState.computeCost();
@@ -422,10 +424,28 @@ class State {
                 rightTask = manager.nextAction(leftTask);
             }
         }
+    
         return localChoice(candidates);
     }
-
+    public void printPlans(){
+        for(Vehicle v: orderedVehicles){
+            System.out.println("==== " + v.name() + " ===");
+            TAction action = manager.firstPick(v);
+            City currentCity = v.homeCity();
+            while(action != null){
+                if(action.isPickUp()){
+                    System.out.println((new Pickup(action.task)));
+                    currentCity = action.task.pickupCity;
+                }else if(action.isDelivery()){
+                    System.out.println(new Delivery(action.task));
+                    currentCity = action.task.deliveryCity;
+                }
+                action = manager.nextAction(action);
+		}
+        }
+    }
     public Plan toPlan(Vehicle v){
+        //printPlans();
         List<Action> actions = new ArrayList<Action>();
         TAction action = manager.firstPick(v);
         City currentCity = v.homeCity();

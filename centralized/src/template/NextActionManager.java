@@ -40,7 +40,9 @@ public class NextActionManager {
 	}
 
 	public void setNextAction(TAction a1, TAction a2) {
+		if(!a1.equals(a2))//throw new IllegalArgumentException();
 		nextAction.put(a1, a2);
+
 	}
 
 	public void removeTask(Task t){
