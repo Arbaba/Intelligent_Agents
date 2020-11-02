@@ -141,7 +141,7 @@ class State {
 
         //Update v1 first task (pick up)
         if(time.get(aDelivery) == 1){
-		    newManager.setFirstAction(v1, neanager.nextAction(aDelivery));
+		    newManager.setFirstAction(v1, newManager.nextAction(aDelivery));
         }else {
             newManager.setFirstAction(v1, newManager.nextAction(aPickUp));
         }
@@ -333,15 +333,22 @@ class State {
         
         List<State> candidates= new ArrayList<State>();
         //random vehicle
-        Vehicle v = vehicles.values().toArray(new Vehicle[vehicles.values().size()])[new Random().nextInt(vehicles.size())];
+        Vehicle v = orderedVehicles.get(new Random().nextInt(orderedVehicles.size()));
+        System.out.println(orderedVehicles.size());
         //fill with changevehicles
         TAction a = manager.firstPick(v);
-        for(Vehicle otherVehichle: vehicles.values()){
-            if(!v.equals(otherVehichle) && a.task.weight <= otherVehichle.capacity()){
-                candidates.add(changeVehicle(v, otherVehichle));
-            }
+        while(a == null){
+            v = orderedVehicles.get(new Random().nextInt(orderedVehicles.size()));
+            a = manager.firstPick(v);
         }
 
+        for(Vehicle otherVehicle: orderedVehicles){
+            if(!v.equals(otherVehicle) /*&& a.task.weight <= otherVehichle.capacity()*/){
+                System.out.println("change");
+                candidates.add(changeVehicle(v, otherVehicle));
+            }
+        }
+        
         //fill with changetaskorder
         //System.out.println("number of keys" + capacityLeft.keySet().size());
         int length = capacityLeft.get(v).size();
@@ -358,7 +365,7 @@ class State {
                         State newState = new State(this);
                         newState.changeTaskOrder(v, leftTask, rightTask);
                         newState.computeCost();
-                        candidates.add(newState);
+                        //candidates.add(newState);
                     }
                     rightTask = manager.nextAction(rightTask);
                 }
