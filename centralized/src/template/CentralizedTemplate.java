@@ -65,24 +65,24 @@ public class CentralizedTemplate implements CentralizedBehavior {
     public State initialStateEven(List<Vehicle> vehicles, TaskSet tasks){
             NextActionManager manager = new NextActionManager(vehicles);
             HashMap<TAction, Vehicle> v  = new HashMap<TAction, Vehicle>();
+            HashMap<Vehicle, TAction> lastAction = new HashMap<Vehicle,TAction>();
             boolean first = true;
             List<Task> list = new ArrayList<Task>();
             for(Task t: tasks){
                 list.add(t);
             }
-            TAction prev =  new TAction(new Pickup(list.get(0)), list.get(0));
             for(int i = 0; i< tasks.size(); i++){
                 Vehicle currentVehicle =  vehicles.get(i % vehicles.size());
                 Task current = list.get(i);
-                    
+
                 if(i < vehicles.size()){
                     TAction pickup = new TAction(new Pickup(list.get(i)), list.get(i));
                     TAction delivery = new TAction(new Delivery(list.get(i)), list.get(i));
 
-
                     manager.setFirstAction(currentVehicle, pickup);
                     manager.setNextAction(pickup, delivery);
-                    prev = delivery;
+                    lastAction.put(currentVehicle, delivery);
+                    //prev = delivery;
                         /*
                     l1 1
                     l2 2 
@@ -96,16 +96,21 @@ public class CentralizedTemplate implements CentralizedBehavior {
                     l3 3
                     l4 4=prev 5 6 7 8 9 10 
                      */
+                    
                     TAction pickup = new TAction(new Pickup(current), current);
                     TAction delivery = new TAction(new Delivery(current), current);
 
-                    manager.setNextAction(prev, pickup);
+                    manager.setNextAction(lastAction.get(currentVehicle), pickup);
                     manager.setNextAction(pickup, delivery);
-                    prev = delivery;
+                    lastAction.put(currentVehicle, delivery);
+                    //prev = delivery;
 
                 }
             }
-            manager.setNextAction(prev, null);
+
+            for(Vehicle car: vehicles){
+                manager.setNextAction(lastAction.get(car), null);
+            }
 
             return new State(manager, vehicles);
     }
