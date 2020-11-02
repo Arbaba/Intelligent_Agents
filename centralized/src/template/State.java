@@ -72,6 +72,7 @@ class State {
 	}
 
     public boolean checkValidity(){
+        
         for(TAction t: oppositeAction.keySet()){
             if(t != null && !(vehicles.get(t) != null) ){
                 throw new RuntimeException("Dont find in vehicles t.toString()");
@@ -129,7 +130,7 @@ class State {
         newState.computeCost();
 
 
-        checkValidity();
+        //checkValidity();
         
         return newState;
 	}
@@ -212,7 +213,7 @@ class State {
 
         //Update time
         newState.updateTime(v, newManager.firstPick(v));
-        checkValidity();
+        //checkValidity();
         //System.out.println("to done");
         return newState;    
     }
