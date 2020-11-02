@@ -142,7 +142,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
             int counter = 0;
             Random rng = new Random(5);
             
-            while(counter < 100 ){
+            while(counter < 1000 ){
                 System.out.println("Iteration " + counter);
                 if(state.cost < bestState.cost && (rng.nextFloat()) < 0.5){
                     bestState = state;

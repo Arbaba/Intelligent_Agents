@@ -297,7 +297,7 @@ class State {
                 if(otherVehicle.capacity() >= manager.firstPick(v).task.weight){
                     newState = changeVehicle(v, otherVehicle);
                     if(newState.allCapacitiesPositive()){
-                        System.out.println("Candidate cost: " + newState.cost);
+                        //System.out.println("Candidate cost: " + newState.cost);
                         candidates.add(newState);
                     }
                 }
