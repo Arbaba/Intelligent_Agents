@@ -62,44 +62,7 @@ class State {
         //System.out.println("Build 0 number of keys" + time.keySet().size());
 
         checkValidity();
- }
-/*    public State(NextActionManager manager,
-                 HashMap<Vehicle, List<Integer>> capacity,
-                 HashMap<TAction, Integer> time,
-                 HashMap<TAction, Vehicle> vehicles, int cost ,
-                 List<Vehicle> orderedVehicles
-                 ){
-        this.manager = new NextActionManager(manager);
-        this.capacityLeft = new HashMap<Vehicle, List<Integer>>(capacityLeft);
-        this.time = new HashMap<TAction, Integer>(time);
-        this.vehicles = new  HashMap<TAction, Vehicle>(vehicles);
-        this.time = new HashMap<TAction, Integer>(time); 
-        this.cost = cost;
-        this.oppositeAction = new HashMap<TAction, TAction>();
-        this.orderedVehicles = new ArrayList<Vehicle>(orderedVehicles);
-        for(Vehicle v : orderedVehicles){
-            this.capacityLeft.put(v, new ArrayList<Integer>());
-            TAction action = manager.firstPick(v);
-            int counter = 0;
-            while(action != null){
-                this.time.put(action, counter);
-                counter++;
-                action = manager.nextAction(action);
-            }
-            
-            updateCapacity(v);
-        }
-        for(TAction a1: time.keySet()){
-            for(TAction a2: time.keySet()){
-                if(a1 != null && a2 != null && a1.task.equals(a2.task)){
-                    oppositeAction.put(a1,a2);
-                }
-            }
-        }
-        System.out.println("Build 1 number of keys" + capacityLeft.keySet().size());
-     
-
-    }*/
+    }
 	
 	public State(State other){
         this.manager = new NextActionManager(other.manager);
@@ -283,41 +246,6 @@ class State {
         }
     }
     
-    public boolean isSwapValid(TAction left, TAction right){
-        /*
-        for(TAction t : vehicles.keySet()){
-            if(t != null)
-            System.out.println(t.task.toString() + t.isPickUp() + " " + t.task.hashCode());
-            else
-                System.out.println("null action" );
-        
-            
-        }
-        
-        System.out.println("done");
-        System.out.println("check left in v" + vehicles.containsKey(left));
-        System.out.println("check left in v" + oppositeAction.containsKey(left));
-        System.out.println("check left in v" + oppositeAction.keySet().size());
-         
-        System.out.println(left.task.toString()+ left.isPickUp() + " "+ left.task.hashCode());
-        System.out.println(vehicles.get(left) );
-        System.out.println(time.get(left) + " "+ time.size());
-        */
-		int leftCap = capacityLeft.get(vehicles.get(left)).get(time.get(left));
-		int rightCap = capacityLeft.get(vehicles.get(right)).get(time.get(right));
-        //weight change is pos for pickup and neg for deliveries
-        leftCap += weightChange(left);
-        rightCap += weightChange(right);
-        /*
-        if(left.isDelivery()){
-            leftCap -= left.task.weight;
-        }else{
-            leftCap += left.task.weight;
-        }*/
-        //decrease if delivery
-        return (leftCap - weightChange(right) >= 0 && rightCap - weightChange(left) >= 0);
-    }
-
     public void computeCost(){
         TAction a;
         cost = 0;

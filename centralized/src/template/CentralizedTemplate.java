@@ -66,45 +66,30 @@ public class CentralizedTemplate implements CentralizedBehavior {
             NextActionManager manager = new NextActionManager(vehicles);
             HashMap<TAction, Vehicle> v  = new HashMap<TAction, Vehicle>();
             HashMap<Vehicle, TAction> lastAction = new HashMap<Vehicle,TAction>();
-            boolean first = true;
             List<Task> list = new ArrayList<Task>();
+
             for(Task t: tasks){
                 list.add(t);
             }
+
             for(int i = 0; i< tasks.size(); i++){
                 Vehicle currentVehicle =  vehicles.get(i % vehicles.size());
                 Task current = list.get(i);
 
                 if(i < vehicles.size()){
-                    TAction pickup = new TAction(new Pickup(list.get(i)), list.get(i));
-                    TAction delivery = new TAction(new Delivery(list.get(i)), list.get(i));
+                    TAction pickup = new TAction(new Pickup(current), current);
+                    TAction delivery = new TAction(new Delivery(current), current);
 
                     manager.setFirstAction(currentVehicle, pickup);
                     manager.setNextAction(pickup, delivery);
                     lastAction.put(currentVehicle, delivery);
-                    //prev = delivery;
-                        /*
-                    l1 1
-                    l2 2 
-                    l3 3
-                    l4 4=prev
-                    */
-                }else {
-                    /*
-                    l1 1
-                    l2 2 
-                    l3 3
-                    l4 4=prev 5 6 7 8 9 10 
-                     */
-                    
+                }else {                    
                     TAction pickup = new TAction(new Pickup(current), current);
                     TAction delivery = new TAction(new Delivery(current), current);
 
                     manager.setNextAction(lastAction.get(currentVehicle), pickup);
                     manager.setNextAction(pickup, delivery);
                     lastAction.put(currentVehicle, delivery);
-                    //prev = delivery;
-
                 }
             }
 
@@ -172,7 +157,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
         State state = bestState.chooseNeighbors();
         int counter = 0;
         Random rng = new Random(5);
-        while(counter < 0 ){
+        while(counter < 100 ){
             System.out.println("Iteration " + counter);
             if(state.cost < bestState.cost && (rng.nextFloat()) < 0.5){
                 bestState = state;
@@ -194,7 +179,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
         NextActionManager manager;
         
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
-        State state = SLS(initialStateEven(vehicles, tasks));
+        State state = SLS(initialState(vehicles, tasks));
         List<Plan> plans = new ArrayList<Plan>();
 
         for(Vehicle v: vehicles){
