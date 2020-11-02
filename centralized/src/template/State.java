@@ -168,6 +168,8 @@ class State {
 
         //Compute the cost 
         newState.computeCost();
+
+
         checkValidity();
         
         return newState;
@@ -180,12 +182,9 @@ class State {
 		
 		while(action != null){
             if(action.isPickUp()){
-                currentCapacity += action.task.weight;
+                currentCapacity -= action.task.weight;
             }else if(action.isDelivery()){
-				currentCapacity -= action.task.weight;
-            }
-            if(currentCapacity < 0){
-                return false;
+				currentCapacity += action.task.weight;
             }
             capacities.add(currentCapacity);
             action = manager.nextAction(action);
@@ -306,11 +305,17 @@ class State {
         */
 		int leftCap = capacityLeft.get(vehicles.get(left)).get(time.get(left));
 		int rightCap = capacityLeft.get(vehicles.get(right)).get(time.get(right));
-
-        leftCap -= weightChange(left);
-		rightCap -= weightChange(right);
-
-        return (leftCap + weightChange(right) >= 0 && rightCap + weightChange(left) >= 0);
+        //weight change is pos for pickup and neg for deliveries
+        leftCap += weightChange(left);
+        rightCap += weightChange(right);
+        /*
+        if(left.isDelivery()){
+            leftCap -= left.task.weight;
+        }else{
+            leftCap += left.task.weight;
+        }*/
+        //decrease if delivery
+        return (leftCap - weightChange(right) >= 0 && rightCap - weightChange(left) >= 0);
     }
 
     public void computeCost(){
@@ -344,6 +349,17 @@ class State {
         //System.out.println("cost: " + best.cost);
         return best;
     }
+    public boolean allCapacitiesPositive(){
+        for(Vehicle v: orderedVehicles){
+            for(Integer capleft: capacityLeft.get(v)){
+                //System.out.println("capacity " +capleft);
+                if(capleft < 0){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 	
     public State chooseNeighbors(){
         
@@ -363,10 +379,18 @@ class State {
             if(!v.equals(otherVehicle) /*&& a.task.weight <= otherVehichle.capacity()*/){
                 //System.out.println("change");
                 State newState = new State(this);
-                newState = changeVehicle(v, otherVehicle);
+                
+                if(otherVehicle.capacity() >= manager.firstPick(v).task.weight){
+                    newState = changeVehicle(v, otherVehicle);
+                    if(newState.allCapacitiesPositive()){
+                        candidates.add(newState);
+
+                    }
+                }
+  
                 //System.out.println(newState.cost);
                 //System.out.print("Cost candidate changeVehicle: " + newState.cost);
-                candidates.add(newState);
+                
             }
         }
         
@@ -382,12 +406,15 @@ class State {
                 for(int t2 = t1 + 1; t2 < length; t2++){
                     //System.out.println("t2: " + t2 + rightTask);
 					//if we are not swapping the same task and we don't have weight problems
-                    if(isInOrder(leftTask, t2) && isInOrder(rightTask, t1) && isSwapValid(leftTask, rightTask)){
+                    if(isInOrder(leftTask, t2) && isInOrder(rightTask, t1)/* && isSwapValid(leftTask, rightTask)*/){
                         State newState = new State(this);
                         newState = newState.changeTaskOrder(v, leftTask, rightTask);
                         newState.computeCost();
                         //System.out.println(newState.cost);
-                        candidates.add(newState);
+                        if(newState.allCapacitiesPositive()){
+                            candidates.add(newState);
+
+                        }
                     }
                     rightTask = manager.nextAction(rightTask);
                 }
