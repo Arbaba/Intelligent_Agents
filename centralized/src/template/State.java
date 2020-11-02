@@ -38,9 +38,9 @@ class State {
             this.capacityLeft.put(v, new ArrayList<Integer>());
             Integer counter = 0;
             while(action != null){
-                action = manager.nextAction(action);
                 this.vehicles.put(action, v);
                 this.time.put(action, counter);
+                action = manager.nextAction(action);
                 counter++;
             }
             updateCapacity(v);
@@ -49,7 +49,7 @@ class State {
         //Initialize oppositeAction
         for(TAction a1: time.keySet()){
             for(TAction a2: time.keySet()){
-                if(a1 != null && a2 != null && a1.task.equals(a2.task)){
+                if(a1 != null && a2 != null && !a1.equals(a2) && a1.task.equals(a2.task)){
                     oppositeAction.put(a1,a2);
                 }
             }
@@ -57,8 +57,11 @@ class State {
     
         //Initialize the cost
         computeCost();
-        System.out.println("Build 0 number of keys" + capacityLeft.keySet().size());
+        //System.out.println("Build 0 number of keys" + capacityLeft.keySet().size());
+        //System.out.println("Build 0 number of keys" + vehicles.size());
+        //System.out.println("Build 0 number of keys" + time.keySet().size());
 
+        checkValidity();
  }
 /*    public State(NextActionManager manager,
                  HashMap<Vehicle, List<Integer>> capacity,
@@ -106,10 +109,24 @@ class State {
         this.cost = other.cost;
         this.oppositeAction = new HashMap<TAction, TAction>(other.oppositeAction);
         this.orderedVehicles = new ArrayList<Vehicle>(other.orderedVehicles);
-        System.out.println("Build 1 number of keys" + capacityLeft.keySet().size());
-
+        checkValidity();
 	}
 
+    public boolean checkValidity(){
+        for(TAction t: oppositeAction.keySet()){
+            if(t != null && !(vehicles.get(t) != null) ){
+                throw new RuntimeException("Dont find in vehicles t.toString()");
+            }
+            if(t != null && !(time.get(t) != null) ){
+                throw new RuntimeException("Dont find in capacityLeft t.toString()");
+            }
+
+            if(t != null && !(vehicles.get(t).equals(vehicles.get(oppositeAction.get(t)))) ){
+                throw new RuntimeException("Dont find in vehicles t.toString()");
+            }
+        }
+        return true;
+    }
 
     //Take the first task from the tasks of one vehicle and give it to another vehicle
     public State changeVehicle(Vehicle v1, Vehicle v2){
@@ -124,7 +141,7 @@ class State {
 
         //Update v1 first task (pick up)
         if(time.get(aDelivery) == 1){
-		    newManager.setFirstAction(v1, newManager.nextAction(aDelivery));
+		    newManager.setFirstAction(v1, neanager.nextAction(aDelivery));
         }else {
             newManager.setFirstAction(v1, newManager.nextAction(aPickUp));
         }
@@ -132,7 +149,7 @@ class State {
         newManager.setNextAction(previousTask(aDelivery), manager.nextAction(aDelivery));
 		//Update the next of the popped task
 		newManager.setNextAction(aPickUp, aDelivery);
-        newManager.setNextAction(aDelivery, newManager.firstPick(v2));
+        newManager.setNextAction(aDelivery, manager.firstPick(v2));
         
 		//Update the first task of vehicle 2
 		newManager.setFirstAction(v2, aPickUp);
@@ -151,6 +168,7 @@ class State {
 
         //Compute the cost 
         newState.computeCost();
+        checkValidity();
         
         return newState;
 	}
@@ -179,10 +197,10 @@ class State {
     public void updateTime(Vehicle v, TAction action){
         int counter = 0;
 		while(action != null){
+            time.put(action, counter);
             action = manager.nextAction(action);
-			time.put(action, counter);
 			counter++;
-		}
+        }
     }
 
     public void updateVehicles(Vehicle v, TAction action){
@@ -231,6 +249,7 @@ class State {
 
         //Update time
         newState.updateTime(v, newManager.firstPick(v));
+        checkValidity();
         
         return newState;    
     }
@@ -252,10 +271,25 @@ class State {
     }
     
     public boolean isSwapValid(TAction left, TAction right){
-        System.out.println( capacityLeft.size() );
-        System.out.println(vehicles.get(left) + " "+ vehicles.size());
+        /*
+        for(TAction t : vehicles.keySet()){
+            if(t != null)
+            System.out.println(t.task.toString() + t.isPickUp() + " " + t.task.hashCode());
+            else
+                System.out.println("null action" );
+        
+            
+        }
+        
+        System.out.println("done");
+        System.out.println("check left in v" + vehicles.containsKey(left));
+        System.out.println("check left in v" + oppositeAction.containsKey(left));
+        System.out.println("check left in v" + oppositeAction.keySet().size());
+         
+        System.out.println(left.task.toString()+ left.isPickUp() + " "+ left.task.hashCode());
+        System.out.println(vehicles.get(left) );
         System.out.println(time.get(left) + " "+ time.size());
-
+        */
 		int leftCap = capacityLeft.get(vehicles.get(left)).get(time.get(left));
 		int rightCap = capacityLeft.get(vehicles.get(right)).get(time.get(right));
 
@@ -309,16 +343,16 @@ class State {
         }
 
         //fill with changetaskorder
-        System.out.println("number of keys" + capacityLeft.keySet().size());
+        //System.out.println("number of keys" + capacityLeft.keySet().size());
         int length = capacityLeft.get(v).size();
         if(length >=2){
             TAction leftTask = manager.firstPick(v);
             TAction rightTask = manager.nextAction(leftTask);
 
-            for(int t1 = 0; t1 < length - 2; t1++){
-                System.out.print("t1: " + t1);
-                for(int t2 = t1 + 1; t2 < length - 1; t2++){
-                    System.out.print("t2: " + t2);
+            for(int t1 = 0; t1 < length - 1; t1++){
+                //System.out.println("t1: " + t1 + leftTask);
+                for(int t2 = t1 + 1; t2 < length; t2++){
+                    //System.out.println("t2: " + t2 + rightTask);
 					//if we are not swapping the same task and we don't have weight problems
                     if(isInOrder(leftTask, t2) && isInOrder(rightTask, t1) && isSwapValid(leftTask, rightTask)){
                         State newState = new State(this);
@@ -329,6 +363,7 @@ class State {
                     rightTask = manager.nextAction(rightTask);
                 }
                 leftTask = manager.nextAction(leftTask);
+                rightTask = manager.nextAction(leftTask);
             }
         }
         return localChoice(candidates);
@@ -345,9 +380,9 @@ class State {
                 actions.add(new Pickup(action.task));
                 currentCity = action.task.pickupCity;
             }else if(action.isDelivery()){
-                for (City city : currentCity.pathTo(action.task.pickupCity))
+                for (City city : currentCity.pathTo(action.task.deliveryCity))
                         actions.add(new Move(city));			
-                actions.add(new Pickup(action.task));
+                actions.add(new Delivery(action.task));
                 currentCity = action.task.deliveryCity;
             }
             action = manager.nextAction(action);
