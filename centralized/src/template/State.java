@@ -87,7 +87,62 @@ class State {
         }
         return true;
     }
+    public State changeVehicle(Vehicle v1, Vehicle v2, TAction a){
+        State newState = new State(this);
 
+        TAction pickup = new TAction(new Pickup(a.task), a.task);
+        TAction delivery = new TAction(new Delivery(a.task), a.task);
+
+        //REMOVING THE TASK FROM VEHICLE V1
+        //Check if pickup is the first action
+        if(newState.manager.firstPick(v1).equals(pickup)){
+            if(!manager.nextAction(pickup).equals(delivery)){
+                newState.manager.setFirstAction(v1, manager.nextAction(pickup));
+            }else{
+                newState.manager.setFirstAction(v1, manager.nextAction(delivery));
+            }
+        }
+
+        //Updating previous action of pickup
+        newState.manager.setNextAction(previousTask(pickup), manager.nextAction(pickup));
+        //Updating previous action of delivery
+        newState.manager.setNextAction(previousTask(delivery), manager.nextAction(delivery));
+
+        //INSERTING THE TASK AT RANDOM INSIDE V2
+        Random rng = new Random(12345);
+        //Chosing the position where the new task will be inserted
+        int pPick = rng.nextInt(capacityLeft.get(v2).size());
+        int counter = 0;
+        
+        TAction action = manager.firstPick(v2);
+
+        //The action is in the first position
+        if(pPick == 0){
+            newState.manager.setFirstAction(v2, pickup);
+        }else{
+            while(counter <= pPick){
+                action = manager.nextAction(action);
+                counter++;
+            }
+
+            newState.manager.setNextAction(previousTask(action), pickup);
+        }
+
+        newState.manager.setNextAction(pickup, action);
+
+        int pDeliver = rng.nextInt(capacityLeft.get(v2).size() - counter - 2);
+        pDeliver += counter+1;
+
+        while(counter <= pDeliver){
+            action = manager.nextAction(action);
+            counter++;
+        }
+
+        newState.manager.setNextAction(action, delivery);
+        newState.manager.setNextAction(delivery, manager.nextAction(action));
+
+        return newState;
+    }
     //Take the first task from the tasks of one vehicle and give it to another vehicle
     public State changeVehicle(Vehicle v1, Vehicle v2){
 		State newState = new State(this);
