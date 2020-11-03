@@ -134,34 +134,16 @@ public class CentralizedTemplate implements CentralizedBehavior {
 
             return new State(manager, vehicles);
     }
-
-    public State SLS(State s){
-        State bestState = new State(s);
-        try {
-            State state = bestState.chooseNeighbors();
-            int counter = 0;
-            Random rng = new Random(5);
-            
-            while(counter < 1000 ){
-                System.out.println("Iteration " + counter);
-                if(state.cost < bestState.cost && (rng.nextFloat()) < 0.5){
-                    bestState = state;
-                }
-                state = bestState.chooseNeighbors();
-                counter++;
-                System.out.println(bestState.cost);
-            }
-            bestState.printPlans();
-        } catch (Exception e) {
-            //TODO: handle exception
-            System.out.println("An exception occured but we return the best solution found.\n" + e.toString());
-
+ 
+    public boolean outOfTime(long time_start, long maxTime){
+        long elapsedTime = System.currentTimeMillis() - time_start;
+        long epsilon = 3000;
+        boolean stop =  maxTime - elapsedTime < epsilon;
+        if(stop){
+            System.out.println("Out of time. Best solution found returned");
         }
-   
-        return bestState;
+        return stop;
     }
-    
-    
     @Override
     public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
 
@@ -169,11 +151,37 @@ public class CentralizedTemplate implements CentralizedBehavior {
         NextActionManager manager;
         
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
-        State state = SLS(initialStateEven(vehicles, tasks));
+        //SLS
+        State bestState = initialStateEven(vehicles, tasks);
+        System.out.println("Initial cost :" + bestState.cost);
+        try {
+            State state = bestState.chooseNeighbors();
+            int counter = 0;
+            Random rng = new Random(5);
+            
+            while(/*counter < 1000  &&*/ !outOfTime(time_start, timeout_plan)){
+                //System.out.println("Iteration " + counter);
+                if(state.cost < bestState.cost && (rng.nextFloat()) < 0.8){
+                    bestState = state;
+                }
+                state = bestState.chooseNeighbors();
+                counter++;
+                //System.out.println(bestState.cost);
+            }
+            //bestState.printPlans();
+        } catch (Exception e) {
+            //TODO: handle exception
+            System.out.println("An exception occured but we return the best solution found.\n" + e.toString());
+
+        }
+
+        System.out.println("Final cost :" + bestState.cost);
+
+        //END SLS
         List<Plan> plans = new ArrayList<Plan>();
 
         for(Vehicle v: vehicles){
-            plans.add(state.toPlan(v));
+            plans.add(bestState.toPlan(v));
         }
         
         long time_end = System.currentTimeMillis();

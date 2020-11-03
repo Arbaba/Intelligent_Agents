@@ -283,7 +283,7 @@ class State {
         //System.out.println(orderedVehicles.size());
         //fill with changevehicles
         TAction a = manager.firstPick(v);
-        System.out.println(this.cost);
+        //System.out.println(this.cost);
         while(a == null){
             v = orderedVehicles.get(new Random().nextInt(orderedVehicles.size()));
             a = manager.firstPick(v);
