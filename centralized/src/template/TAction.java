@@ -3,6 +3,7 @@ package template;
 import logist.task.Task;
 import logist.plan.Action.Delivery;
 import logist.plan.Action.Pickup;
+import logist.topology.Topology.City;
 
 public class TAction {
     Task task;
@@ -24,6 +25,13 @@ public class TAction {
         return !pick;
     }
 
+    City targetCity(){
+        if(isPickUp()){
+            return task.pickupCity;
+        }else{
+            return task.deliveryCity;
+        }
+    }
     @Override
     public int hashCode() {
         // TODO Auto-generated method stub

@@ -1,6 +1,8 @@
 package template;
 
 import java.io.File;
+import java.io.FileWriter;
+
 //the list of imports
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,16 +112,24 @@ public class CentralizedTemplate implements CentralizedBehavior {
         }
 
         for(int i = 0; i< tasks.size(); i++){
+            Task current = list.get(i);
+
             int closestVehicleIdx = 0;
             double closestDistance = Double.POSITIVE_INFINITY;
             for(int idx =0; idx < vehicles.size(); idx++ ){
                 City city = vehicles.get(idx).homeCity();
-                
+                if(lastAction.get(vehicles.get(idx)) != null){
+                    city = lastAction.get(vehicles.get(idx)).targetCity();
+                }
+                double distance = city.distanceTo(current.pickupCity);
+                if(distance <closestDistance){
+                    closestVehicleIdx = idx;
+                    closestDistance = distance;
+                }
             }
-            Vehicle currentVehicle =  vehicles.get(i % vehicles.size());
-            Task current = list.get(i);
+            Vehicle currentVehicle =  vehicles.get(closestVehicleIdx);
 
-            if(i < vehicles.size()){
+            if(lastAction.get(currentVehicle) == null){
                 TAction pickup = new TAction(new Pickup(current), current);
                 TAction delivery = new TAction(new Delivery(current), current);
 
@@ -191,35 +201,62 @@ public class CentralizedTemplate implements CentralizedBehavior {
 
         long time_start = System.currentTimeMillis();
         NextActionManager manager;
-        
-//		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
+		//System.out.println("Agent " + agent.id() + " has tasks " + tasks);
         //SLS
-        State bestState = initialState(vehicles, tasks);
+        State bestState = initialStateClosest(vehicles, tasks);
+
+        List<State> bests = new ArrayList<State>();
+
         System.out.println("Initial cost :" + bestState.cost);
         try {
+            //FileWriter writer = new FileWriter("p8.txt");
+            //writer.write(String.format("%f, %d\n", 0.0f, bestState.cost));
+
             State state = bestState.chooseNeighbors();
+
             int counter = 0;
             Random rng = new Random(5);
             int sameCost = 0;
-            while(sameCost < 100 && !outOfTime(time_start, timeout_plan)){
-                //System.out.println("Iteration " + counter);
-                if(state.cost < bestState.cost && (rng.nextFloat()) < 0.5){
+            while(!outOfTime(time_start, timeout_plan)){ 
+
+                //if p< rndm
+                //compute new best and put it in the list
+                //else
+                //take the best form the list
+                //reset the list
+                if((rng.nextFloat()) < 0.2){
+                    if(bests.size() > 0 ){
+                        state = state.localChoice(bests);  
+                    }
+                    if(state.cost < bestState.cost){
+                        //writer.write(String.format("%d, %d\n", (System.currentTimeMillis() - time_start), bestState.cost));
+                        //writer.flush();
+                    }
                     bestState = state;
+
+                    bests = new ArrayList<State>();                  
+                }else{
+                    bests.add(bestState.chooseNeighbors());
                 }
+
+                
                 if(bestState.cost == state.cost){
                     sameCost++;
                 }else{
                     sameCost = 0;
                 }
-                state = bestState.chooseNeighbors();
+                //state = bestState.chooseNeighbors();
                 counter++;
                 //System.out.println(bestState.cost);
             }
+            
             //bestState.printPlans();
+            //writer.flush();
+            //writer.close();
         } catch (Exception e) {
             //TODO: handle exception
-            System.out.println("An exception occured but we return the best solution found.\n" + e.toString());
-
+            System.out.println("An exception occured but we return the best solution found.\n" );
+            e.printStackTrace();
         }
 
         System.out.println("Final cost :" + bestState.cost);
