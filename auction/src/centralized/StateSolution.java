@@ -139,8 +139,8 @@ public class StateSolution {
                 }else{
                     sameCost = 0;
                 }
-                if(sameCost == 100){
-                    return bestState;
+                if(sameCost == 1000){
+                    break;
                 }
                 //state = bestState.chooseNeighbors();
                 counter++;

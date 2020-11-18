@@ -98,7 +98,7 @@ public class Auction implements AuctionBehavior {
 		State currentState = taskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()): StateSolution.findBestState(agent.vehicles(), taskSet, timeout_plan);
 		HashSet<Task> newTaskSet = new HashSet<Task>(taskSet);
 		newTaskSet.add(task);
-		State newState =   taskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeout_plan);
+		State newState =   newTaskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeout_plan);
 
 
 		/*if (vehicle.capacity() < task.weight)
@@ -110,7 +110,8 @@ public class Auction implements AuctionBehavior {
 		double marginalCost = Measures.unitsToKM(distanceSum
 				* vehicle.costPerKm());
 		*/
-		double marginalCost = newState.getCost() - currentState.getCost();
+		double marginalCost = Measures.unitsToKM((newState.getCost() - (currentState.getCost()))* vehicle.costPerKm());
+		if(marginalCost <= 0) return null;
 		double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
 		double bid = ratio * marginalCost;
 
