@@ -257,6 +257,7 @@ public class State {
     }
     
     public State localChoice(List<State> candidates){
+        //if(candidates.size()==0) return new State(this);
         State best = candidates.get(0);
         double c = best.cost;
         for(int i = 1; i < candidates.size(); i++){
@@ -308,7 +309,7 @@ public class State {
         int length = capacityLeft.get(v2).size();
         TAction left = newState.manager.firstPick(v2);
         TAction right = newState.manager.firstPick(v2);
-
+        System.out.println("length " + length);
         for(int t1 = 0; t1 < length-1; t1++){
             for(int t2 = t1; t2 < length-1; t2++){
                 State c = new State(newState);
@@ -364,7 +365,7 @@ public class State {
             right = manager.nextAction(left);
             left = manager.nextAction(left);
         }
-
+        System.out.println(candidates.size());
         return candidates;
     }
 
@@ -381,7 +382,7 @@ public class State {
         //fill with changevehicles
         TAction a = manager.firstPick(v);
         //System.out.println(this.cost);
-        while(a == null){
+        while(a == null || capacityLeft.get(v).size() == 0){
             v = orderedVehicles.get(new Random().nextInt(orderedVehicles.size()));
             a = manager.firstPick(v);
         }
@@ -418,7 +419,7 @@ public class State {
                 rightTask = manager.nextAction(leftTask);
             }
         }
-    
+       // System.out.println(candidates.size());
         return localChoice(candidates);
     }
     public void printPlans(){

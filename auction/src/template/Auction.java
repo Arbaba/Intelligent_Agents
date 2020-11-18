@@ -110,7 +110,7 @@ public class Auction implements AuctionBehavior {
 		double marginalCost = Measures.unitsToKM(distanceSum
 				* vehicle.costPerKm());
 		*/
-		double marginalCost = Measures.unitsToKM((newState.getCost() - (currentState.getCost()))* vehicle.costPerKm());
+		double marginalCost = ((newState.getCost() - (currentState.getCost()))* vehicle.costPerKm());
 		if(marginalCost <= 0) return null;
 		double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
 		double bid = ratio * marginalCost;
