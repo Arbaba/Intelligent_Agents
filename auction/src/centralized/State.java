@@ -304,68 +304,89 @@ public class State {
         }
 
         //Adding the removed task from v1 to v2 in all possible positions
-        List<State> candidates= new ArrayList<State>();
+        
 
         int length = capacityLeft.get(v2).size();
-        TAction left = newState.manager.firstPick(v2);
-        TAction right = newState.manager.firstPick(v2);
-        System.out.println("length " + length);
-        for(int t1 = 0; t1 < length-1; t1++){
-            for(int t2 = t1; t2 < length-1; t2++){
-                State c = new State(newState);
+        List<State> candidates= new ArrayList<State>();
+        if(length >= 2){
+            TAction left = newState.manager.firstPick(v2);
+            TAction right = newState.manager.firstPick(v2);
+            //System.out.println("length " + length);
+        
+            for(int t1 = 0; t1 < length-1; t1++){
+                for(int t2 = t1; t2 < length-1; t2++){
+                    State c = new State(newState);
 
-                if(t1 == t2){
-                    if(t1 == 0){
+                    if(t1 == t2){
+                        if(t1 == 0){
+                            c.manager.setFirstAction(v2, pickup);
+
+                            c.manager.setNextAction(pickup, delivery);
+                            c.manager.setNextAction(delivery, right);
+                        }else{
+                            c.manager.setNextAction(newState.previousTask(left), pickup);
+                            c.manager.setNextAction(pickup, delivery);
+                            c.manager.setNextAction(delivery, right);
+                        }
+                    }else{
+                        if(t1 == 0){
                         c.manager.setFirstAction(v2, pickup);
-
-                        c.manager.setNextAction(pickup, delivery);
+                        c.manager.setNextAction(pickup, left);
+                        
+                        c.manager.setNextAction(newState.previousTask(right), delivery);
                         c.manager.setNextAction(delivery, right);
-                    }else{
+                        }else{
                         c.manager.setNextAction(newState.previousTask(left), pickup);
-                        c.manager.setNextAction(pickup, delivery);
+                        c.manager.setNextAction(pickup, left);
+
+                        c.manager.setNextAction(newState.previousTask(right), delivery);
                         c.manager.setNextAction(delivery, right);
+                        }
                     }
-                }else{
-                    if(t1 == 0){
-                    c.manager.setFirstAction(v2, pickup);
-                    c.manager.setNextAction(pickup, left);
-                    
-                    c.manager.setNextAction(newState.previousTask(right), delivery);
-                    c.manager.setNextAction(delivery, right);
-                    }else{
-                    c.manager.setNextAction(newState.previousTask(left), pickup);
-                    c.manager.setNextAction(pickup, left);
+                    //Update capacity
+		            c.updateCapacity(v1);
+		            c.updateCapacity(v2);
 
-                    c.manager.setNextAction(newState.previousTask(right), delivery);
-                    c.manager.setNextAction(delivery, right);
+                    if(c.allCapacitiesPositive()){
+
+
+		                //Update time
+		                c.updateTime(v1, c.manager.firstPick(v1));
+		                c.updateTime(v2, c.manager.firstPick(v2));
+
+                        //Update vehicles
+                        c.updateVehicles(v2, pickup);
+                        c.updateVehicles(v2, delivery);
+
+                        //Compute the cost 
+                        c.computeCost();
+                        candidates.add(c);
                     }
+
+                    right = manager.nextAction(right);
                 }
-                //Update capacity
-		        c.updateCapacity(v1);
-		        c.updateCapacity(v2);
-
-                if(c.allCapacitiesPositive()){
-                    
-
-		            //Update time
-		            c.updateTime(v1, c.manager.firstPick(v1));
-		            c.updateTime(v2, c.manager.firstPick(v2));
-
-                    //Update vehicles
-                    c.updateVehicles(v2, pickup);
-                    c.updateVehicles(v2, delivery);
-
-                    //Compute the cost 
-                    c.computeCost();
-                    candidates.add(c);
-                }
-
-                right = manager.nextAction(right);
+                right = manager.nextAction(left);
+                left = manager.nextAction(left);
             }
-            right = manager.nextAction(left);
-            left = manager.nextAction(left);
+        }else{
+            newState.manager.setFirstAction(v2, pickup);
+            newState.manager.setNextAction(pickup, delivery);
+            newState.manager.setNextAction(delivery, null);
+
+            newState.updateCapacity(v1);
+            newState.updateCapacity(v2);
+            //Update time
+            newState.updateTime(v1, newState.manager.firstPick(v1));
+            newState.updateTime(v2, newState.manager.firstPick(v2));
+            //Update vehicles
+            newState.updateVehicles(v2, pickup);
+            newState.updateVehicles(v2, delivery);
+            //Compute the cost 
+            newState.computeCost();
+
+            candidates.add(newState);
         }
-        System.out.println(candidates.size());
+        //System.out.println(candidates.size());
         return candidates;
     }
 
