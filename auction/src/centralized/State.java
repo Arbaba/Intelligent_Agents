@@ -140,8 +140,8 @@ public class State {
     public void updateCapacity(Vehicle v){
 		int currentCapacity = v.capacity();
         TAction action = manager.firstPick(v);
-		List<Integer> capacities = new ArrayList<Integer>();
-		
+        List<Integer> capacities = new ArrayList<Integer>();
+        
 		while(action != null){
             if(action.isPickUp()){
                 currentCapacity -= action.task.weight;
@@ -276,6 +276,7 @@ public class State {
         int idx = new Random().nextInt(bests.size());
         return bests.get(idx);
     }
+
     public boolean allCapacitiesPositive(){
         for(Vehicle v: orderedVehicles){
             for(Integer capleft: capacityLeft.get(v)){
@@ -286,12 +287,95 @@ public class State {
         }
         return true;
     }
+
+    public List<State> changeVehicle1(Vehicle v1, Vehicle v2){
+        State newState = new State(this);
+
+        TAction pickup = manager.firstPick(v1);
+        TAction delivery = oppositeAction.get(pickup);
+
+        //REMOVING THE TASK FROM VEHICLE V1
+        if(time.get(delivery) == 1){
+		    newState.manager.setFirstAction(v1, newState.manager.nextAction(delivery));
+        }else {
+            newState.manager.setFirstAction(v1, newState.manager.nextAction(pickup));
+            newState.manager.setNextAction(previousTask(delivery), manager.nextAction(delivery));
+        }
+
+        //Adding the removed task from v1 to v2 in all possible positions
+        List<State> candidates= new ArrayList<State>();
+
+        int length = capacityLeft.get(v2).size();
+        TAction left = newState.manager.firstPick(v2);
+        TAction right = newState.manager.firstPick(v2);
+
+        for(int t1 = 0; t1 < length-1; t1++){
+            for(int t2 = t1; t2 < length-1; t2++){
+                State c = new State(newState);
+
+                if(t1 == t2){
+                    if(t1 == 0){
+                        c.manager.setFirstAction(v2, pickup);
+
+                        c.manager.setNextAction(pickup, delivery);
+                        c.manager.setNextAction(delivery, right);
+                    }else{
+                        c.manager.setNextAction(newState.previousTask(left), pickup);
+                        c.manager.setNextAction(pickup, delivery);
+                        c.manager.setNextAction(delivery, right);
+                    }
+                }else{
+                    if(t1 == 0){
+                    c.manager.setFirstAction(v2, pickup);
+                    c.manager.setNextAction(pickup, left);
+                    
+                    c.manager.setNextAction(newState.previousTask(right), delivery);
+                    c.manager.setNextAction(delivery, right);
+                    }else{
+                    c.manager.setNextAction(newState.previousTask(left), pickup);
+                    c.manager.setNextAction(pickup, left);
+
+                    c.manager.setNextAction(newState.previousTask(right), delivery);
+                    c.manager.setNextAction(delivery, right);
+                    }
+                }
+                //Update capacity
+		        c.updateCapacity(v1);
+		        c.updateCapacity(v2);
+
+                if(c.allCapacitiesPositive()){
+                    
+
+		            //Update time
+		            c.updateTime(v1, c.manager.firstPick(v1));
+		            c.updateTime(v2, c.manager.firstPick(v2));
+
+                    //Update vehicles
+                    c.updateVehicles(v2, pickup);
+                    c.updateVehicles(v2, delivery);
+
+                    //Compute the cost 
+                    c.computeCost();
+                    candidates.add(c);
+                }
+
+                right = manager.nextAction(right);
+            }
+            right = manager.nextAction(left);
+            left = manager.nextAction(left);
+        }
+
+        return candidates;
+    }
+
+    public State insertTask(State s, Vehicle v, TAction toInsert, TAction current){
+        return null;
+    }
 	
     public State chooseNeighbors(){
         
         List<State> candidates= new ArrayList<State>();
         //random vehicle
-        //System.out.println("asssss");
         Vehicle v = orderedVehicles.get(new Random().nextInt(orderedVehicles.size()));
         //System.out.println(orderedVehicles.size());
         //fill with changevehicles
@@ -300,20 +384,11 @@ public class State {
         while(a == null){
             v = orderedVehicles.get(new Random().nextInt(orderedVehicles.size()));
             a = manager.firstPick(v);
-            //System.out.println("asss");
         }
 
         for(Vehicle otherVehicle: orderedVehicles){
             if(!v.equals(otherVehicle)){
-                State newState = new State(this);
-                
-                if(otherVehicle.capacity() >= manager.firstPick(v).task.weight){
-                    newState = changeVehicle(v, otherVehicle);
-                    if(newState.allCapacitiesPositive()){
-                        //System.out.println("Candidate cost: " + newState.cost);
-                        candidates.add(newState);
-                    }
-                }
+                candidates.addAll(changeVehicle1(v, otherVehicle));
             }
         }
         
