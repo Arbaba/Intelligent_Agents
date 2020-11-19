@@ -103,7 +103,7 @@ public class StateSolution {
         List<State> candidates = new ArrayList<State>();
 
         System.out.println("Initial cost :" + state.cost);
-        
+
         try {
             //FileWriter writer = new FileWriter("p8.txt");
             //writer.write(String.format("%f, %d\n", 0.0f, bestState.cost));
@@ -123,7 +123,8 @@ public class StateSolution {
                     if(candidates.size() > 0 ){
                         State temp = state.localChoice(candidates);  
                         if(temp.cost < state.cost){
-                            state = temp;
+                            state = new State(temp);
+                            bestCost = state.cost;
                         } 
                     }
                     candidates = new ArrayList<State>();                  
@@ -136,7 +137,7 @@ public class StateSolution {
                 }else{
                     sameCost = 0;
                 }
-                if(sameCost == 1000){
+                if(sameCost == 10){
                     break;
                 }
                 //state = bestState.chooseNeighbors();
