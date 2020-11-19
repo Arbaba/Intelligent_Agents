@@ -97,44 +97,41 @@ public class StateSolution {
         NextActionManager manager;
 		//System.out.println("Agent " + agent.id() + " has tasks " + tasks);
         //SLS
-        State bestState = initialStateClosest(vehicles, tasks);
+        State state = initialStateClosest(vehicles, tasks);
+        int bestCost = state.cost;
 
-        List<State> bests = new ArrayList<State>();
+        List<State> candidates = new ArrayList<State>();
 
-        System.out.println("Initial cost :" + bestState.cost);
+        System.out.println("Initial cost :" + state.cost);
+        
         try {
             //FileWriter writer = new FileWriter("p8.txt");
             //writer.write(String.format("%f, %d\n", 0.0f, bestState.cost));
 
-            State state = bestState.chooseNeighbors();
+            //State state = bestState.chooseNeighbors();
 
             int counter = 0;
             Random rng = new Random(5);
             int sameCost = 0;
             while(!outOfTime(time_start, timeout_plan)){ 
-
                 //if p< rndm
                 //compute new best and put it in the list
                 //else
                 //take the best form the list
                 //reset the list
                 if((rng.nextFloat()) < 0.2){
-                    if(bests.size() > 0 ){
-                        state = state.localChoice(bests);  
+                    if(candidates.size() > 0 ){
+                        State temp = state.localChoice(candidates);  
+                        if(temp.cost < state.cost){
+                            state = temp;
+                        } 
                     }
-                    if(state.cost < bestState.cost){
-                        //writer.write(String.format("%d, %d\n", (System.currentTimeMillis() - time_start), bestState.cost));
-                        //writer.flush();
-                    }
-                    bestState = state;
-
-                    bests = new ArrayList<State>();                  
+                    candidates = new ArrayList<State>();                  
                 }else{
-                    bests.add(bestState.chooseNeighbors());
+                    candidates.add(state.chooseNeighbors());
                 }
 
-                
-                if(bestState.cost == state.cost){
+                if(bestCost == state.cost){
                     sameCost++;
                 }else{
                     sameCost = 0;
@@ -144,7 +141,7 @@ public class StateSolution {
                 }
                 //state = bestState.chooseNeighbors();
                 counter++;
-                //System.out.println(bestState.cost);
+                //System.out.println(state.cost);
             }
             
             //bestState.printPlans();
@@ -156,8 +153,8 @@ public class StateSolution {
             e.printStackTrace();
         }
 
-        System.out.println("Final cost :" + bestState.cost);
-        return bestState;
+        System.out.println("Final cost :" + state.cost);
+        return state;
     }
 
     public static List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks, long timeout_plan) {
