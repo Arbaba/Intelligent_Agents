@@ -14,7 +14,7 @@ import logist.config.Parsers;
 import logist.behavior.AuctionBehavior;
 import logist.agent.Agent;
 import logist.simulation.Vehicle;
-
+import logist.simulation.VehicleImpl;
 import logist.plan.Plan;
 import logist.task.Task;
 import logist.task.TaskDistribution;
@@ -62,7 +62,12 @@ public class Auction implements AuctionBehavior {
         catch (Exception exc) {
             System.out.println("There was a problem loading the configuration file.");
         }
-        
+		
+		for(City from: topology.cities()){
+			for(City to: topology.cities()){
+				System.out.println(from.toString() + " -> " + to.toString() + " " + distribution.probability(from, to));
+			}
+		}
         // the setup method cannot last more than timeout_setup milliseconds
         timeout_setup = ls.get(LogistSettings.TimeoutKey.SETUP);
         // the plan method cannot execute more than timeout_plan milliseconds
@@ -82,6 +87,30 @@ public class Auction implements AuctionBehavior {
 		}
 	}
 
+	/**
+	 * Compute the lambda from the exponential distribution according 
+	 * to the Maximum likelihood estimation
+	 * @param bids
+	 * @return
+	 */
+	public double MLE(long[] bids){	
+		double acc = 0;
+		for(long bid: bids){
+			acc += bid;
+		}
+		return acc / (float) bids.length;
+	}
+
+	/**
+	 * 
+	 * @param lambda
+	 * @return
+	 */
+	public double sampleExponential(double lambda){
+		return Math.log( 1 - Math.random()) / lambda;
+	}
+
+
 	@Override
 	public void auctionResult(Task previous, int winner, Long[] bids) {
 		if (winner == agent.id()) {
@@ -90,15 +119,15 @@ public class Auction implements AuctionBehavior {
 		}
 	}
 	
+	
 	@Override
 	public Long askPrice(Task task) {
 		System.out.println("Bid");
-		
 		//careful on timeout!
-		State currentState = taskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()): StateSolution.findBestState(agent.vehicles(), taskSet, timeout_plan);
+		State currentState = taskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()): StateSolution.findBestState(agent.vehicles(), taskSet, timeout_bid);
 		HashSet<Task> newTaskSet = new HashSet<Task>(taskSet);
 		newTaskSet.add(task);
-		State newState =   newTaskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeout_plan);
+		State newState =   newTaskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeout_bid);
 
 
 		/*if (vehicle.capacity() < task.weight)
@@ -110,19 +139,21 @@ public class Auction implements AuctionBehavior {
 		double marginalCost = Measures.unitsToKM(distanceSum
 				* vehicle.costPerKm());
 		*/
-		double marginalCost = ((newState.getCost() - (currentState.getCost()))* vehicle.costPerKm());
+		double marginalCost = ((newState.getCost() - (currentState.getCost())));
 		if(marginalCost <= 0) return null;
 		double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
 		double bid = ratio * marginalCost;
-
-		return (long) Math.round(bid);
+		System.out.println("dataset size : " + newTaskSet.size());
+		System.out.println(bid);
+		return (long) Math.round(bid * 1.5) ;
 	}
 
     @Override
     public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
 		System.out.println("Build plan");
+		System.out.println(tasks.size());
         long time_start = System.currentTimeMillis();
-        return centralized.StateSolution.plan(vehicles, tasks, time_start);
+        return centralized.StateSolution.plan(vehicles, tasks, timeout_plan);
     }
 	private Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
 		City current = vehicle.getCurrentCity();
