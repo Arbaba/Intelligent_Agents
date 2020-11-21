@@ -3,11 +3,13 @@ import java.io.File;
 
 //the list of imports
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.Collections;
 
 import logist.Measures;
 import logist.config.Parsers;
@@ -51,6 +53,11 @@ public class Auction implements AuctionBehavior {
 	private long timeout_setup;
 	private long timeout_plan;
 	private long timeout_bid;
+	private int numBids;
+	private int wonBids;
+	private long lastBid;
+	ArrayList<Long> pastBids;
+	ArrayList<Double> pastCost;
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
 			Agent agent) {
@@ -78,10 +85,13 @@ public class Auction implements AuctionBehavior {
 		this.agent = agent;
 		this.vehicle = agent.vehicles().get(0);
 		this.currentCity = vehicle.homeCity();
+		this.numBids = 0;
 		currentState = new State(new NextActionManager(agent.vehicles()), agent.vehicles());
 		long seed = -9019554669489983951L * currentCity.hashCode() * agent.id();
 		this.random = new Random(seed);
 		this.taskSet = new HashSet<Task>();
+		this.pastBids = new ArrayList<Long>();
+		this.pastCost = new ArrayList<Double>();
 		for(Vehicle v : agent.vehicles()){
 			System.out.println(v.name());
 		}
@@ -93,12 +103,14 @@ public class Auction implements AuctionBehavior {
 	 * @param bids
 	 * @return
 	 */
-	public double MLE(long[] bids){	
+	public double MLE(ArrayList<Long> bids){	
 		double acc = 0;
+		int counter = 0;
 		for(long bid: bids){
-			acc += bid;
+			acc += bid - pastCost.get(counter);
+			counter++;
 		}
-		return acc / (float) bids.length;
+		return acc / (float) bids.size();
 	}
 
 	/**
@@ -107,18 +119,29 @@ public class Auction implements AuctionBehavior {
 	 * @return
 	 */
 	public double sampleExponential(double lambda){
-		return Math.log( 1 - Math.random()) / lambda;
+		return Math.log(1 - Math.random()) / (-lambda);
 	}
 
+	public long secondBiggest(Long[] bids){
+		Long[] sorted = Arrays.copyOf(bids, bids.length);
+		Arrays.sort(sorted);
+		return sorted[sorted.length-2];
+	}
 
 	@Override
 	public void auctionResult(Task previous, int winner, Long[] bids) {
 		if (winner == agent.id()) {
 			taskSet.add(previous);
 			currentCity = previous.deliveryCity;
+			wonBids++;
+			pastBids.add(secondBiggest(bids));
+		}else{
+			pastBids.add(bids[winner]);
 		}
+		numBids++;
+		System.out.println("My bid: " + lastBid + " Bid who won:" + bids[winner]);
+		System.out.println("Won " + wonBids / (float) numBids * 100 + " % of bids");
 	}
-	
 	
 	@Override
 	public Long askPrice(Task task) {
@@ -129,7 +152,7 @@ public class Auction implements AuctionBehavior {
 		newTaskSet.add(task);
 		State newState =   newTaskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeout_bid);
 
-
+		pastCost.add((double) newState.getCost());
 		/*if (vehicle.capacity() < task.weight)
 			return null;
 
@@ -139,13 +162,27 @@ public class Auction implements AuctionBehavior {
 		double marginalCost = Measures.unitsToKM(distanceSum
 				* vehicle.costPerKm());
 		*/
+		
 		double marginalCost = ((newState.getCost() - (currentState.getCost())));
 		if(marginalCost <= 0) return null;
+		/*
 		double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
 		double bid = ratio * marginalCost;
-		System.out.println("dataset size : " + newTaskSet.size());
-		System.out.println(bid);
-		return (long) Math.round(bid * 1.5) ;
+		//System.out.println("dataset size : " + newTaskSet.size());
+		lastBid = (long) Math.round(bid * 1.0);
+		return (long) Math.round(bid * 1.0) ;
+		*/
+		double lambda;
+		if(pastBids.size() == 0){
+			lambda = 1 / (double) 100;
+		}else{
+			lambda = MLE(pastBids);
+		}
+		
+		
+		lastBid = (long)(sampleExponential(lambda * 4) + newState.getCost());
+		System.out.println("bid: " + lastBid);
+		return lastBid;
 	}
 
     @Override
