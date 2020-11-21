@@ -164,25 +164,35 @@ public class Auction implements AuctionBehavior {
 		*/
 		
 		double marginalCost = ((newState.getCost() - (currentState.getCost())));
-		if(marginalCost <= 0) return null;
-		/*
-		double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
-		double bid = ratio * marginalCost;
-		//System.out.println("dataset size : " + newTaskSet.size());
-		lastBid = (long) Math.round(bid * 1.0);
-		return (long) Math.round(bid * 1.0) ;
-		*/
-		double lambda;
-		if(pastBids.size() == 0){
-			lambda = 1 / (double) 100;
-		}else{
-			lambda = MLE(pastBids);
+		if(marginalCost <= 0) {
+			long distanceTask = task.pickupCity.distanceUnitsTo(task.deliveryCity);
+			long distanceSum = distanceTask;
+					//+ currentCity.distanceUnitsTo(task.pickupCity);
+			return (long) Measures.unitsToKM(distanceSum
+					* vehicle.costPerKm());
 		}
-		
-		
-		lastBid = (long)(sampleExponential(lambda * 4) + newState.getCost());
-		System.out.println("bid: " + lastBid);
-		return lastBid;
+		else {
+			
+			//	return Math.round(marginalCost);
+			
+			double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
+			double bid = ratio * marginalCost;
+			//System.out.println("dataset size : " + newTaskSet.size());
+			lastBid = (long) Math.round(bid * 1.0);
+			//return (long) Math.round(bid * 1.0) ;
+			
+			double lambda;
+			if(pastBids.size() == 0){
+				lambda = 1 / (double) 100;
+			}else{
+				lambda = MLE(pastBids);
+			}
+			
+			
+			lastBid = (long)(sampleExponential(lambda) + marginalCost);
+			System.out.println("bid: " + lastBid);
+			return lastBid;
+		}
 	}
 
     @Override
