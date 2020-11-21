@@ -34,6 +34,7 @@ import centralized.TAction;
 import centralized.StateSolution;
 import logist.plan.Action.Delivery;
 import logist.plan.Action.Pickup;
+import logist.simulation.VehicleImpl;
 /**
  * A very simple auction agent that assigns all tasks to its first vehicle and
  * handles them sequentially.
@@ -58,6 +59,9 @@ public class Auction implements AuctionBehavior {
 	private long lastBid;
 	ArrayList<Long> pastBids;
 	ArrayList<Double> pastCost;
+	HashMap<Integer, ArrayList<Task>> tasksPerAgent;
+	HashMap<Integer, ArrayList<Vehicle>> vehiclesPerAgent;
+
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
 			Agent agent) {
@@ -75,6 +79,7 @@ public class Auction implements AuctionBehavior {
 				System.out.println(from.toString() + " -> " + to.toString() + " " + distribution.probability(from, to));
 			}
 		}
+		
         // the setup method cannot last more than timeout_setup milliseconds
         timeout_setup = ls.get(LogistSettings.TimeoutKey.SETUP);
         // the plan method cannot execute more than timeout_plan milliseconds
@@ -85,7 +90,7 @@ public class Auction implements AuctionBehavior {
 		this.agent = agent;
 		this.vehicle = agent.vehicles().get(0);
 		this.currentCity = vehicle.homeCity();
-		this.numBids = 0;
+		this.	numBids = 0;
 		currentState = new State(new NextActionManager(agent.vehicles()), agent.vehicles());
 		long seed = -9019554669489983951L * currentCity.hashCode() * agent.id();
 		this.random = new Random(seed);
@@ -95,6 +100,7 @@ public class Auction implements AuctionBehavior {
 		for(Vehicle v : agent.vehicles()){
 			System.out.println(v.name());
 		}
+		this.tasksPerAgent = new HashMap<Integer,ArrayList<Task>>();
 	}
 
 	/**
@@ -122,25 +128,50 @@ public class Auction implements AuctionBehavior {
 		return Math.log(1 - Math.random()) / (-lambda);
 	}
 
-	public long secondBiggest(Long[] bids){
+	public long secondLowest(Long[] bids){
 		Long[] sorted = Arrays.copyOf(bids, bids.length);
 		Arrays.sort(sorted);
-		return sorted[sorted.length-2];
+		return sorted[1];
 	}
 
+	public long meanCost(List<Task> tasks){
+		State s = centralized.StateSolution.findBestState(agent.vehicles(), new HashSet<Task>(tasks), timeout_bid);
+
+		return s.getCost();
+	}
 	@Override
 	public void auctionResult(Task previous, int winner, Long[] bids) {
+		if(tasksPerAgent.isEmpty()){
+			for(int i = 0; i< bids.length ; i++){
+				ArrayList<Task> ts = new ArrayList<Task>();
+				tasksPerAgent.put(i, ts);
+			}
+		}
+		if(vehiclesPerAgent.isEmpty()){
+			//can use topology.randomcity later
+			City startCity = topology.cities().get((int) Math.floor(Math.random() *topology.cities().size()));
+			//VehicleImpl vehicle = new VehicleImpl(id, name, capacity, costPerKm, home, speed, color)
+			//add to vehicles per agent
+		}
+		if(tasksPerAgent.containsKey(winner)){
+			tasksPerAgent.get(winner).add(previous);
+		}else {
+			System.out.println("Key not found " + winner);
+		}
+
+
 		if (winner == agent.id()) {
 			taskSet.add(previous);
 			currentCity = previous.deliveryCity;
 			wonBids++;
-			pastBids.add(secondBiggest(bids));
+			pastBids.add(secondLowest(bids));
 		}else{
 			pastBids.add(bids[winner]);
 		}
 		numBids++;
 		System.out.println("My bid: " + lastBid + " Bid who won:" + bids[winner]);
 		System.out.println("Won " + wonBids / (float) numBids * 100 + " % of bids");
+		
 	}
 	
 	@Override
@@ -152,18 +183,18 @@ public class Auction implements AuctionBehavior {
 		newTaskSet.add(task);
 		State newState =   newTaskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeout_bid);
 
-		pastCost.add((double) newState.getCost());
 		/*if (vehicle.capacity() < task.weight)
-			return null;
-
+		return null;
+		
 		long distanceTask = task.pickupCity.distanceUnitsTo(task.deliveryCity);
 		long distanceSum = distanceTask
-				+ currentCity.distanceUnitsTo(task.pickupCity);
+		+ currentCity.distanceUnitsTo(task.pickupCity);
 		double marginalCost = Measures.unitsToKM(distanceSum
-				* vehicle.costPerKm());
+		* vehicle.costPerKm());
 		*/
 		
 		double marginalCost = ((newState.getCost() - (currentState.getCost())));
+		pastCost.add((double) marginalCost);
 		if(marginalCost <= 0) {
 			long distanceTask = task.pickupCity.distanceUnitsTo(task.deliveryCity);
 			long distanceSum = distanceTask;
