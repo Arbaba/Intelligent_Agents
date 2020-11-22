@@ -273,15 +273,18 @@ public class Auction implements AuctionBehavior {
 				lambda = 1/(marginalCost + (opponentMarginalCost - marginalCost) / 2.0);
 			}*/
 			
-			lastBid = (long)(sampleExponential(4 * lambda) + marginalCost);
+			lastBid = (long)(sampleExponential(2 * lambda) + marginalCost);
 
 			//Taking the task generate profit iven if 
 			if(marginalCost <= 0) {
 				System.out.println("Negative marginal cost");
 				if(opponentMarginalCost <= 0){
 					System.out.println("Negative opponent marginal cost");
+					lastBid = (long)(2*sampleExponential(lambda));
+				}else{
+					lastBid = (long)(2*sampleExponential(lambda)) + opponentMarginalCost;
+
 				}
-				lastBid = (long)(sampleExponential(lambda) );
 			}
 			//lastBid = (long) marginalCost;
 			System.out.println("bid: " + lastBid);
