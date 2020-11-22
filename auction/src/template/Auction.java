@@ -1,11 +1,12 @@
 package template;
 import java.io.File;
-
+import java.lang.reflect.Array;
 //the list of imports
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.HashSet;
 import java.util.HashMap;
@@ -60,7 +61,9 @@ public class Auction implements AuctionBehavior {
 	ArrayList<Long> pastBids;
 	ArrayList<Double> pastCost;
 	HashMap<Integer, ArrayList<Task>> tasksPerAgent;
-	HashMap<Integer, ArrayList<Vehicle>> vehiclesPerAgent;
+	HashMap<Integer, ArrayList<ArrayList<Vehicle>>> vehiclesPerAgent;
+	HashMap<Integer, Long> currentCost;
+	HashMap<Integer, Long> computedCost;
 
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
@@ -100,7 +103,40 @@ public class Auction implements AuctionBehavior {
 		for(Vehicle v : agent.vehicles()){
 			System.out.println(v.name());
 		}
+		this.vehiclesPerAgent =  new HashMap<Integer,ArrayList<ArrayList<Vehicle>>>();
 		this.tasksPerAgent = new HashMap<Integer,ArrayList<Task>>();
+		this.currentCost = new HashMap<Integer, Long>();
+		this.computedCost = new HashMap<Integer, Long>();
+
+
+		if(tasksPerAgent.isEmpty()){
+			for(int i = 0; i< 2; i++){
+				ArrayList<Task> ts = new ArrayList<Task>();
+				tasksPerAgent.put(i, ts);
+			}
+		}
+
+		if(vehiclesPerAgent.isEmpty()){
+			//can use topology.randomcity later
+			//add to vehicles per agent
+			for(int agentIdx = 0; agentIdx <  2; agentIdx++){
+				currentCost.put(agentIdx,(long) 0);
+				computedCost.put(agentIdx,(long) 0);
+
+				vehiclesPerAgent.put(agentIdx, new ArrayList<ArrayList<Vehicle>>());
+				int nSimulations = 3;
+				for(int simulationIdx = 0; simulationIdx < nSimulations; simulationIdx++ ){
+					vehiclesPerAgent.get(agentIdx).add(new ArrayList<Vehicle>());
+
+					for(int i = 0; i < agent.vehicles().size();  i++){
+						Vehicle dummyVehicle = agent.vehicles().get(0);
+						City startCity = topology.cities().get((int) Math.floor(Math.random() *topology.cities().size()));
+						Vehicle vehicle = (new VehicleImpl(dummyVehicle.id(), dummyVehicle.name(), dummyVehicle.capacity(), dummyVehicle.costPerKm(), startCity, (long) dummyVehicle.speed(), dummyVehicle.color())).getInfo();
+						vehiclesPerAgent.get(agentIdx).get(simulationIdx).add(vehicle);
+					}
+				}
+			}	
+		}
 	}
 
 	/**
@@ -147,11 +183,24 @@ public class Auction implements AuctionBehavior {
 				tasksPerAgent.put(i, ts);
 			}
 		}
+
 		if(vehiclesPerAgent.isEmpty()){
 			//can use topology.randomcity later
-			City startCity = topology.cities().get((int) Math.floor(Math.random() *topology.cities().size()));
-			//VehicleImpl vehicle = new VehicleImpl(id, name, capacity, costPerKm, home, speed, color)
 			//add to vehicles per agent
+			for(int agentIdx = 0; agentIdx <  bids.length; agentIdx++){
+				vehiclesPerAgent.put(agentIdx, new ArrayList<ArrayList<Vehicle>>());
+				int nSimulations = 3;
+				for(int simulationIdx = 0; simulationIdx < nSimulations; simulationIdx++ ){
+					vehiclesPerAgent.get(agentIdx).add(new ArrayList<Vehicle>());
+
+					for(int i = 0; i < agent.vehicles().size();  i++){
+						Vehicle dummyVehicle = agent.vehicles().get(0);
+						City startCity = topology.cities().get((int) Math.floor(Math.random() *topology.cities().size()));
+						Vehicle vehicle = (new VehicleImpl(dummyVehicle.id(), dummyVehicle.name(), dummyVehicle.capacity(), dummyVehicle.costPerKm(), startCity, (long) dummyVehicle.speed(), dummyVehicle.color())).getInfo();
+						vehiclesPerAgent.get(agentIdx).get(simulationIdx).add(vehicle);
+					}
+				}
+			}	
 		}
 		if(tasksPerAgent.containsKey(winner)){
 			tasksPerAgent.get(winner).add(previous);
@@ -167,8 +216,15 @@ public class Auction implements AuctionBehavior {
 			pastBids.add(secondLowest(bids));
 		}else{
 			pastBids.add(bids[winner]);
+			//add task to tasksPerAgent[winner]
 		}
+		currentCost.put(winner, computedCost.get(winner));
 		numBids++;
+		for(int i = 0; i < bids.length; i++){
+			if(i != agent.id()){
+				System.out.println("Opponent bid: " + bids[i]);
+			}
+		}
 		System.out.println("My bid: " + lastBid + " Bid who won:" + bids[winner]);
 		System.out.println("Won " + wonBids / (float) numBids * 100 + " % of bids");
 		
@@ -193,18 +249,52 @@ public class Auction implements AuctionBehavior {
 		* vehicle.costPerKm());
 		*/
 		
-		double marginalCost = ((newState.getCost() - (currentState.getCost())));
-		pastCost.add((double) marginalCost);
-		if(marginalCost <= 0) {
-			long distanceTask = task.pickupCity.distanceUnitsTo(task.deliveryCity);
-			long distanceSum = distanceTask;
-					//+ currentCity.distanceUnitsTo(task.pickupCity);
-			return (long) Measures.unitsToKM(distanceSum
-					* vehicle.costPerKm());
-		}
-		else {
-			
-			//	return Math.round(marginalCost);
+
+		if(tasksPerAgent.isEmpty()){
+			long marginalCost = ((newState.getCost() - (currentState.getCost())));
+			return marginalCost;
+		}else{
+			int bestAgentIdx = 0;
+			double maxSize = 0;
+			//find the best agent (most tasks)
+			for(Map.Entry<Integer,ArrayList<Task>> entry : tasksPerAgent.entrySet()){
+				int agentId = entry.getKey();
+				if(agentId != agent.id()){
+					ArrayList<Task> tasks = entry.getValue();
+					if(tasks.size() >= maxSize){
+						bestAgentIdx = agentId;
+						maxSize = tasks.size();
+					}
+				}
+			}
+
+			//compute its average cost with the new task
+			long opponentCost = 0;
+			long timeForOpponents = timeout_bid / 4;
+			ArrayList<Task> opponentTasks = new ArrayList<Task>(tasksPerAgent.get(bestAgentIdx));
+			opponentTasks.add(task);
+			for(ArrayList<Vehicle> vs: vehiclesPerAgent.get(bestAgentIdx)){
+				opponentCost += centralized.StateSolution.findBestState(vs, new HashSet<Task>(opponentTasks), timeForOpponents).getCost() ;
+
+			}
+			opponentCost /= vehiclesPerAgent.get(bestAgentIdx).size();
+			computedCost.put(bestAgentIdx, opponentCost);
+
+			//Compute the marginal of our agent and adversary agent
+			long opponentMarginalCost = opponentCost - computedCost.get(bestAgentIdx);
+			double marginalCost = ((newState.getCost() - (currentState.getCost())));
+			pastCost.add((double) marginalCost);
+
+
+			//Taking the task generate profit iven if 
+			if(marginalCost <= 0) {
+				System.out.println("spotted");
+				marginalCost = opponentMarginalCost * 0.5;
+			}else{
+				System.out.println("jesus");
+
+			}
+				
 			
 			double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
 			double bid = ratio * marginalCost;
@@ -212,17 +302,22 @@ public class Auction implements AuctionBehavior {
 			lastBid = (long) Math.round(bid * 1.0);
 			//return (long) Math.round(bid * 1.0) ;
 			
-			double lambda;
-			if(pastBids.size() == 0){
+			double lambda = 1 / (double) 100;
+
+			/*if(pastBids.size() == 0){
 				lambda = 1 / (double) 100;
 			}else{
 				lambda = MLE(pastBids);
+			}*/
+			//if their expected bid is higher than ours, sample a bid such that E[sample] = our bid + half the difference 
+			if(opponentMarginalCost > marginalCost ){
+				lambda = 1/(marginalCost + (opponentMarginalCost - marginalCost) / 2.0);
 			}
-			
 			
 			lastBid = (long)(sampleExponential(lambda) + marginalCost);
 			System.out.println("bid: " + lastBid);
 			return lastBid;
+			
 		}
 	}
 
