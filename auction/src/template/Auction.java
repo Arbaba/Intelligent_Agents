@@ -36,6 +36,7 @@ import centralized.StateSolution;
 import logist.plan.Action.Delivery;
 import logist.plan.Action.Pickup;
 import logist.simulation.VehicleImpl;
+import java.util.Random;
 /**
  * A very simple auction agent that assigns all tasks to its first vehicle and
  * handles them sequentially.
@@ -50,7 +51,7 @@ public class Auction implements AuctionBehavior {
 	private Random random;
 	private Vehicle vehicle;
 	private City currentCity;
-	private State currentState;
+	//private State currentState;
 	private HashSet<Task> taskSet;
 	private long timeout_setup;
 	private long timeout_plan;
@@ -58,6 +59,7 @@ public class Auction implements AuctionBehavior {
 	private int numBids;
 	private int wonBids;
 	private long lastBid;
+	private long rnSeed;
 	ArrayList<Long> pastBids;
 	ArrayList<Double> pastCost;
 	HashMap<Integer, ArrayList<Task>> tasksPerAgent;
@@ -82,19 +84,19 @@ public class Auction implements AuctionBehavior {
 				System.out.println(from.toString() + " -> " + to.toString() + " " + distribution.probability(from, to));
 			}
 		}
-		
         // the setup method cannot last more than timeout_setup milliseconds
         timeout_setup = ls.get(LogistSettings.TimeoutKey.SETUP);
         // the plan method cannot execute more than timeout_plan milliseconds
         timeout_plan = ls.get(LogistSettings.TimeoutKey.PLAN);
-        timeout_bid = ls.get(LogistSettings.TimeoutKey.BID);
+		timeout_bid = ls.get(LogistSettings.TimeoutKey.BID);
+		
 		this.topology = topology;
 		this.distribution = distribution;
 		this.agent = agent;
 		this.vehicle = agent.vehicles().get(0);
 		this.currentCity = vehicle.homeCity();
 		this.	numBids = 0;
-		currentState = new State(new NextActionManager(agent.vehicles()), agent.vehicles());
+		//currentState = new State(new NextActionManager(agent.vehicles()), agent.vehicles());
 		long seed = -9019554669489983951L * currentCity.hashCode() * agent.id();
 		this.random = new Random(seed);
 		this.taskSet = new HashSet<Task>();
@@ -124,13 +126,13 @@ public class Auction implements AuctionBehavior {
 				computedCost.put(agentIdx,(long) 0);
 
 				vehiclesPerAgent.put(agentIdx, new ArrayList<ArrayList<Vehicle>>());
-				int nSimulations = 3;
+				int nSimulations = 6;
 				for(int simulationIdx = 0; simulationIdx < nSimulations; simulationIdx++ ){
 					vehiclesPerAgent.get(agentIdx).add(new ArrayList<Vehicle>());
 
 					for(int i = 0; i < agent.vehicles().size();  i++){
 						Vehicle dummyVehicle = agent.vehicles().get(0);
-						City startCity = topology.cities().get((int) Math.floor(Math.random() *topology.cities().size()));
+						City startCity = topology.randomCity(random);
 						Vehicle vehicle = (new VehicleImpl(dummyVehicle.id(), dummyVehicle.name(), dummyVehicle.capacity(), dummyVehicle.costPerKm(), startCity, (long) dummyVehicle.speed(), dummyVehicle.color())).getInfo();
 						vehiclesPerAgent.get(agentIdx).get(simulationIdx).add(vehicle);
 					}
@@ -149,10 +151,10 @@ public class Auction implements AuctionBehavior {
 		double acc = 0;
 		int counter = 1;
 		for(long bid: bids){
-			acc += counter * (bid - pastCost.get(counter));
-			counter++;
+			acc +=  (bid - pastCost.get(counter));
+			//counter++;
 		}
-		return (float) ((bids.size() * (bids.size()+1))/2 ) / acc;
+		return (float) bids.size()  / acc;
 	}
 
 	/**
@@ -161,7 +163,7 @@ public class Auction implements AuctionBehavior {
 	 * @return
 	 */
 	public double sampleExponential(double lambda){
-		return Math.log(1 - Math.random()) / (-lambda);
+		return Math.log(1 - random.nextDouble()) / (-lambda);
 	}
 
 	public long secondLowest(Long[] bids){
@@ -177,31 +179,7 @@ public class Auction implements AuctionBehavior {
 	}
 	@Override
 	public void auctionResult(Task previous, int winner, Long[] bids) {
-		if(tasksPerAgent.isEmpty()){
-			for(int i = 0; i< bids.length ; i++){
-				ArrayList<Task> ts = new ArrayList<Task>();
-				tasksPerAgent.put(i, ts);
-			}
-		}
-
-		if(vehiclesPerAgent.isEmpty()){
-			//can use topology.randomcity later
-			//add to vehicles per agent
-			for(int agentIdx = 0; agentIdx <  bids.length; agentIdx++){
-				vehiclesPerAgent.put(agentIdx, new ArrayList<ArrayList<Vehicle>>());
-				int nSimulations = 3;
-				for(int simulationIdx = 0; simulationIdx < nSimulations; simulationIdx++ ){
-					vehiclesPerAgent.get(agentIdx).add(new ArrayList<Vehicle>());
-
-					for(int i = 0; i < agent.vehicles().size();  i++){
-						Vehicle dummyVehicle = agent.vehicles().get(0);
-						City startCity = topology.cities().get((int) Math.floor(Math.random() *topology.cities().size()));
-						Vehicle vehicle = (new VehicleImpl(dummyVehicle.id(), dummyVehicle.name(), dummyVehicle.capacity(), dummyVehicle.costPerKm(), startCity, (long) dummyVehicle.speed(), dummyVehicle.color())).getInfo();
-						vehiclesPerAgent.get(agentIdx).get(simulationIdx).add(vehicle);
-					}
-				}
-			}	
-		}
+		
 		if(tasksPerAgent.containsKey(winner)){
 			tasksPerAgent.get(winner).add(previous);
 		}else {
@@ -234,24 +212,15 @@ public class Auction implements AuctionBehavior {
 	public Long askPrice(Task task) {
 		System.out.println("Bid");
 		//careful on timeout!
-		State currentState = taskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()): StateSolution.findBestState(agent.vehicles(), taskSet, timeout_bid);
 		HashSet<Task> newTaskSet = new HashSet<Task>(taskSet);
 		newTaskSet.add(task);
 		State newState =   newTaskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeout_bid);
+		computedCost.put(agent.id(), (long) newState.getCost());
 
-		/*if (vehicle.capacity() < task.weight)
-		return null;
-		
-		long distanceTask = task.pickupCity.distanceUnitsTo(task.deliveryCity);
-		long distanceSum = distanceTask
-		+ currentCity.distanceUnitsTo(task.pickupCity);
-		double marginalCost = Measures.unitsToKM(distanceSum
-		* vehicle.costPerKm());
-		*/
 		
 
 		if(tasksPerAgent.isEmpty()){
-			long marginalCost = ((newState.getCost() - (currentState.getCost())));
+			long marginalCost = ((newState.getCost() - (computedCost.get(agent.id()))));
 			return marginalCost;
 		}else{
 			int bestAgentIdx = 0;
@@ -270,7 +239,7 @@ public class Auction implements AuctionBehavior {
 
 			//compute its average cost with the new task
 			long opponentCost = 0;
-			long timeForOpponents = timeout_bid / 4;
+			long timeForOpponents = timeout_bid / vehiclesPerAgent.get(bestAgentIdx).size();
 			ArrayList<Task> opponentTasks = new ArrayList<Task>(tasksPerAgent.get(bestAgentIdx));
 			opponentTasks.add(task);
 			for(ArrayList<Vehicle> vs: vehiclesPerAgent.get(bestAgentIdx)){
@@ -281,7 +250,7 @@ public class Auction implements AuctionBehavior {
 
 			//Compute the marginal of our agent and adversary agent
 			long opponentMarginalCost = opponentCost - currentCost.get(bestAgentIdx);
-			double marginalCost = newState.getCost() - currentState.getCost();
+			double marginalCost = newState.getCost() - currentCost.get(agent.id());
 			pastCost.add((double) opponentMarginalCost);
 				
 			
@@ -304,11 +273,15 @@ public class Auction implements AuctionBehavior {
 				lambda = 1/(marginalCost + (opponentMarginalCost - marginalCost) / 2.0);
 			}*/
 			
-			lastBid = (long)(sampleExponential(2*lambda) + marginalCost);
+			lastBid = (long)(sampleExponential(4 * lambda) + marginalCost);
 
 			//Taking the task generate profit iven if 
 			if(marginalCost <= 0) {
-				lastBid = (long)(sampleExponential(2*lambda) + opponentMarginalCost);
+				System.out.println("Negative marginal cost");
+				if(opponentMarginalCost <= 0){
+					System.out.println("Negative opponent marginal cost");
+				}
+				lastBid = (long)(sampleExponential(lambda) );
 			}
 			//lastBid = (long) marginalCost;
 			System.out.println("bid: " + lastBid);
