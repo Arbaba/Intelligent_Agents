@@ -273,7 +273,7 @@ public class Auction implements AuctionBehavior {
 				lambda = 1/(marginalCost + (opponentMarginalCost - marginalCost) / 2.0);
 			}*/
 			
-			lastBid = (long)(sampleExponential(2 * lambda) + marginalCost);
+			lastBid = (long)(sampleExponential(3 * lambda) + marginalCost);
 
 			//Taking the task generate profit iven if 
 			if(marginalCost <= 0) {
@@ -283,7 +283,6 @@ public class Auction implements AuctionBehavior {
 					lastBid = (long)(2*sampleExponential(lambda));
 				}else{
 					lastBid = (long)(2*sampleExponential(lambda)) + opponentMarginalCost;
-
 				}
 			}
 			//lastBid = (long) marginalCost;
