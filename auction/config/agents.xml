@@ -12,5 +12,9 @@
 		<set class-path="bin/"/>
 		<set class-name="template.Auction"/>
 	</agent>
+	<agent name="auction-greedy">
+		<set class-path="bin/"/>
+		<set class-name="template.Greedy"/>
+	</agent>
 	
 </agents>
