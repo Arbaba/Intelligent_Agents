@@ -152,7 +152,7 @@ public class Auction implements AuctionBehavior {
 			acc += counter * (bid - pastCost.get(counter));
 			counter++;
 		}
-		return acc / (float) ((bids.size() * (bids.size()+1))/2 );
+		return (float) ((bids.size() * (bids.size()+1))/2 ) / acc;
 	}
 
 	/**
@@ -283,12 +283,6 @@ public class Auction implements AuctionBehavior {
 			long opponentMarginalCost = opponentCost - currentCost.get(bestAgentIdx);
 			double marginalCost = newState.getCost() - currentState.getCost();
 			pastCost.add((double) opponentMarginalCost);
-
-
-			//Taking the task generate profit iven if 
-			if(marginalCost <= 0) {
-				marginalCost = opponentMarginalCost;
-			}
 				
 			
 			double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
@@ -311,6 +305,11 @@ public class Auction implements AuctionBehavior {
 			}*/
 			
 			lastBid = (long)(sampleExponential(2*lambda) + marginalCost);
+
+			//Taking the task generate profit iven if 
+			if(marginalCost <= 0) {
+				lastBid = (long)(sampleExponential(2*lambda) + opponentMarginalCost);
+			}
 			//lastBid = (long) marginalCost;
 			System.out.println("bid: " + lastBid);
 			return lastBid;
