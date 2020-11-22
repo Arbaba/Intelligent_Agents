@@ -147,12 +147,12 @@ public class Auction implements AuctionBehavior {
 	 */
 	public double MLE(ArrayList<Long> bids){	
 		double acc = 0;
-		int counter = 0;
+		int counter = 1;
 		for(long bid: bids){
-			acc += bid - pastCost.get(counter);
+			acc += counter * (bid - pastCost.get(counter));
 			counter++;
 		}
-		return acc / (float) bids.size();
+		return acc / (float) ((bids.size() * (bids.size()+1))/2 );
 	}
 
 	/**
@@ -275,24 +275,19 @@ public class Auction implements AuctionBehavior {
 			opponentTasks.add(task);
 			for(ArrayList<Vehicle> vs: vehiclesPerAgent.get(bestAgentIdx)){
 				opponentCost += centralized.StateSolution.findBestState(vs, new HashSet<Task>(opponentTasks), timeForOpponents).getCost() ;
-
 			}
 			opponentCost /= vehiclesPerAgent.get(bestAgentIdx).size();
 			computedCost.put(bestAgentIdx, opponentCost);
 
 			//Compute the marginal of our agent and adversary agent
-			long opponentMarginalCost = opponentCost - computedCost.get(bestAgentIdx);
-			double marginalCost = ((newState.getCost() - (currentState.getCost())));
-			pastCost.add((double) marginalCost);
+			long opponentMarginalCost = opponentCost - currentCost.get(bestAgentIdx);
+			double marginalCost = newState.getCost() - currentState.getCost();
+			pastCost.add((double) opponentMarginalCost);
 
 
 			//Taking the task generate profit iven if 
 			if(marginalCost <= 0) {
-				System.out.println("spotted");
-				marginalCost = opponentMarginalCost * 0.5;
-			}else{
-				System.out.println("jesus");
-
+				marginalCost = opponentMarginalCost;
 			}
 				
 			
@@ -304,17 +299,19 @@ public class Auction implements AuctionBehavior {
 			
 			double lambda = 1 / (double) 100;
 
-			/*if(pastBids.size() == 0){
+			if(pastBids.size() == 0){
 				lambda = 1 / (double) 100;
 			}else{
 				lambda = MLE(pastBids);
-			}*/
+			}
 			//if their expected bid is higher than ours, sample a bid such that E[sample] = our bid + half the difference 
+			/*
 			if(opponentMarginalCost > marginalCost ){
 				lambda = 1/(marginalCost + (opponentMarginalCost - marginalCost) / 2.0);
-			}
+			}*/
 			
-			lastBid = (long)(sampleExponential(lambda) + marginalCost);
+			lastBid = (long)(sampleExponential(2*lambda) + marginalCost);
+			//lastBid = (long) marginalCost;
 			System.out.println("bid: " + lastBid);
 			return lastBid;
 			
