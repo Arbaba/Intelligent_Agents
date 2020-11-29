@@ -58,6 +58,7 @@ public class Auction implements AuctionBehavior {
 	private long timeout_bid;
 	private int numBids;
 	private int wonBids;
+	private int lostBids;
 	private long lastBid;
 	private long rnSeed;
 	ArrayList<Long> pastBids;
@@ -96,6 +97,7 @@ public class Auction implements AuctionBehavior {
 		this.vehicle = agent.vehicles().get(0);
 		this.currentCity = vehicle.homeCity();
 		this.	numBids = 0;
+		this.lostBids = 2;
 		//currentState = new State(new NextActionManager(agent.vehicles()), agent.vehicles());
 		long seed = -9019554669489983951L * currentCity.hashCode() * agent.id();
 		this.random = new Random(seed);
@@ -188,12 +190,16 @@ public class Auction implements AuctionBehavior {
 
 
 		if (winner == agent.id()) {
+			if(lostBids > 2){
+				lostBids--;
+			}
 			taskSet.add(previous);
 			currentCity = previous.deliveryCity;
 			wonBids++;
 			pastBids.add(secondLowest(bids));
 		}else{
 			pastBids.add(bids[winner]);
+			lostBids++;
 			//add task to tasksPerAgent[winner]
 		}
 		currentCost.put(winner, computedCost.get(winner));
@@ -212,10 +218,14 @@ public class Auction implements AuctionBehavior {
 	public Long askPrice(Task task) {
 		System.out.println("Bid");
 		//careful on timeout!
+		long time_start = System.currentTimeMillis();
+		long timeForOpponents = (timeout_bid) / (vehiclesPerAgent.get(bestAgentIdx).size()+2);
+		long timeNewState = timeout_bid - timeForOpponents*vehiclesPerAgent.get(bestAgentIdx).size();
 		HashSet<Task> newTaskSet = new HashSet<Task>(taskSet);
 		newTaskSet.add(task);
-		State newState =   newTaskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeout_bid);
+		State newState =   newTaskSet.size() == 0 ? new State(new NextActionManager(agent.vehicles()), agent.vehicles()):  centralized.StateSolution.findBestState(agent.vehicles(), newTaskSet, timeNewState);
 		computedCost.put(agent.id(), (long) newState.getCost());
+		long time_end = System.currentTimeMillis();
 
 		
 
@@ -239,7 +249,6 @@ public class Auction implements AuctionBehavior {
 
 			//compute its average cost with the new task
 			long opponentCost = 0;
-			long timeForOpponents = timeout_bid / vehiclesPerAgent.get(bestAgentIdx).size();
 			ArrayList<Task> opponentTasks = new ArrayList<Task>(tasksPerAgent.get(bestAgentIdx));
 			opponentTasks.add(task);
 			for(ArrayList<Vehicle> vs: vehiclesPerAgent.get(bestAgentIdx)){
@@ -273,7 +282,7 @@ public class Auction implements AuctionBehavior {
 				lambda = 1/(marginalCost + (opponentMarginalCost - marginalCost) / 2.0);
 			}*/
 			
-			lastBid = (long)(sampleExponential(3 * lambda) + marginalCost);
+			lastBid = (long)(sampleExponential(lostBids * lambda) + marginalCost);
 
 			//Taking the task generate profit iven if 
 			if(marginalCost <= 0) {
